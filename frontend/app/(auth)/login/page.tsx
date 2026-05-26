@@ -38,8 +38,15 @@ export default function LoginPage() {
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
     setLoading(true)
+    
+    // Simulate API call
     await new Promise((r) => setTimeout(r, 1200))
-    setLoading(false)
+    
+    // Set a simple auth token cookie for the prototype
+    document.cookie = "auth-token=demo-token-123; path=/; max-age=86400"
+    
+    // Redirect to dashboard (hard refresh so middleware kicks in)
+    window.location.href = "/dashboard"
   }
 
   return (
