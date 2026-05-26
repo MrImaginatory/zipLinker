@@ -25,7 +25,7 @@ export default function Home() {
           </nav>
         </header>
 
-        <main className="relative z-10 mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
+        <main className="relative z-10 mx-auto flex w-full flex-1 flex-col items-center justify-center px-6 pb-16 text-center">
           <div className="mb-8 inline-flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs text-zinc-400 backdrop-blur-sm">
             <span className="size-1.5 rounded-full bg-emerald-500" />
             Now in public beta

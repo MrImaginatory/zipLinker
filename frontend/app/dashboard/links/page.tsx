@@ -98,7 +98,7 @@ export default function LinksPage() {
   }
 
   return (
-    <div className="p-8 pb-24 md:pb-8 max-w-5xl mx-auto">
+    <div className="p-8 pb-24 md:pb-8 mx-auto">
       <h1 className="font-display text-3xl tracking-tight text-ink">
         Links
       </h1>
@@ -214,7 +214,7 @@ export default function LinksPage() {
                     {link.longUrlLink}
                   </p>
                 </div>
-                
+
                 {/* Stats */}
                 <div className="flex items-center gap-4 text-xs text-steel shrink-0 border-t border-beige-deep/50 pt-3 sm:border-t-0 sm:pt-0">
                   <div className="flex flex-col sm:items-end">

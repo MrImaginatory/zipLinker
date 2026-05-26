@@ -8,10 +8,10 @@ export default function DashboardLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="flex min-h-screen flex-col md:flex-row">
+    <div className="flex h-screen w-screen overflow-hidden flex-col md:flex-row bg-background">
       <MobileNav />
       <Sidebar />
-      <main className="flex flex-1 flex-col min-w-0 pb-16 md:pb-0">
+      <main className="flex flex-1 flex-col min-w-0 overflow-y-auto pb-16 md:pb-0">
         <div className="flex-1">{children}</div>
         <SunsetStripe />
       </main>
