@@ -7,7 +7,7 @@ const protectedRoutes = ["/dashboard"]
 // Add routes that are typically used for static assets and shouldn't be checked
 const publicPathPrefixes = ["/_next", "/favicon.ico", "/images", "/api"]
 
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   
   // Skip middleware for static files and api routes

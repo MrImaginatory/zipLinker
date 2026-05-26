@@ -20,9 +20,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const logoPath = process.env.NEXT_PUBLIC_LOGO_PATH || "/logo.svg"
+const productName = process.env.NEXT_PUBLIC_PRODUCT_NAME || ""
+
 export const metadata: Metadata = {
-  title: "Ziplinker - URL Shortener",
-  description: "Shorten, share, and track your links with Ziplinker.",
+  title: productName ? `${productName} - URL Shortener` : "URL Shortener",
+  description: productName
+    ? `Shorten, share, and track your links with ${productName}.`
+    : "Shorten, share, and track your links.",
+  icons: {
+    icon: logoPath,
+  },
 };
 
 export default function RootLayout({
