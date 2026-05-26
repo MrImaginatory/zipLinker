@@ -2,6 +2,8 @@ import Link from "next/link"
 import { HeroShader } from "@/components/landing/hero-shader"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { SunsetStripe } from "@/components/landing/sunset-stripe"
+import { Features } from "@/components/landing/features"
+import { Faq } from "@/components/landing/faq"
 
 export default function Home() {
   return (
@@ -27,12 +29,6 @@ export default function Home() {
           </Link>
           <nav className="flex items-center gap-3">
             <ThemeToggle />
-            <Link
-              href="/login"
-              className="text-sm text-zinc-400 transition-colors hover:text-zinc-100"
-            >
-              Sign in
-            </Link>
             <Link
               href="/signup"
               className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-deep active:translate-y-px"
@@ -75,12 +71,6 @@ export default function Home() {
                 <path d="m12 5 7 7-7 7" />
               </svg>
             </Link>
-            <Link
-              href="/login"
-              className="inline-flex h-10 items-center justify-center rounded-md border border-zinc-800 px-6 text-sm font-medium text-zinc-300 transition-colors hover:border-zinc-700 hover:text-zinc-100"
-            >
-              Sign in
-            </Link>
           </div>
 
           <div className="mt-20 grid w-full max-w-lg grid-cols-3 gap-6">
@@ -99,6 +89,9 @@ export default function Home() {
           </div>
         </main>
       </div>
+
+      <Features />
+      <Faq />
 
       <SunsetStripe />
 
