@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { Geist, Poppins, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeToggle } from "@/components/theme-toggle";
 import "./globals.css";
 
-const inter = Inter({
+const geistSans = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
 });
 
-const playfair = Playfair_Display({
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700"],
   variable: "--font-display",
   subsets: ["latin"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   variable: "--font-mono",
   subsets: ["latin"],
 });
@@ -31,11 +33,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable} ${jetbrainsMono.variable}`}
+      className={`${geistSans.variable} ${poppins.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col font-sans">
-        <ThemeProvider>{children}</ThemeProvider>
+        <ThemeProvider>
+          {children}
+          <div className="fixed bottom-6 right-6 z-50">
+            <ThemeToggle />
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   );

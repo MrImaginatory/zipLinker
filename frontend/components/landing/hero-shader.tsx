@@ -21,8 +21,16 @@ void main() {
     vec2 uv = vUv;
     vec3 col = vec3(uv.x, 0.0, uv.y);
     vec2 offset = uMouse;
-    vec3 cir = 1.0 - vec3(length(uv - offset)) - length(uv - offset);
-    vec3 ran = vec3(fract(uv.x * 10.0));
+    
+    float dist = length(uv - offset);
+    // Use smoothstep for softer circle edges instead of linear distance
+    vec3 cir = vec3(smoothstep(0.8, 0.0, dist));
+    // Create "slat" effect using fract, but soften the harsh drop-off with smoothstep
+    float slatVal = fract(uv.x * 15.0);
+    // Smoothly drop from 1 to 0 at the very edge to prevent aliasing/jitter
+    float slat = slatVal * (1.0 - smoothstep(0.85, 1.0, slatVal));
+    vec3 ran = vec3(slat * 0.5); // scale down the intensity a bit so it's not too dark
+    
     col = cir + col - ran;
     
     gl_FragColor = vec4(col, 1.0);
@@ -34,16 +42,26 @@ function ShaderQuad() {
   const { width, height } = useThree((s) => s.viewport)
   const size = useThree((s) => s.size)
 
-  useFrame((state) => {
+  useFrame((state, delta) => {
     if (!materialRef.current) return
     materialRef.current.uniforms.uResolution.value.set(
       size.width * state.viewport.dpr,
       size.height * state.viewport.dpr,
     )
-    materialRef.current.uniforms.uMouse.value.set(
-      (state.pointer.x + 1) / 2,
-      (state.pointer.y + 1) / 2
-    )
+    
+    // Smooth out mouse movement using lerp
+    const targetX = (state.pointer.x + 1) / 2;
+    const targetY = (state.pointer.y + 1) / 2;
+    materialRef.current.uniforms.uMouse.value.x = THREE.MathUtils.lerp(
+      materialRef.current.uniforms.uMouse.value.x,
+      targetX,
+      0.05
+    );
+    materialRef.current.uniforms.uMouse.value.y = THREE.MathUtils.lerp(
+      materialRef.current.uniforms.uMouse.value.y,
+      targetY,
+      0.05
+    );
   })
 
   return (

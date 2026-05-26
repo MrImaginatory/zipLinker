@@ -1,6 +1,5 @@
 import Link from "next/link"
 import { HeroShader } from "@/components/landing/hero-shader"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { SunsetStripe } from "@/components/landing/sunset-stripe"
 import { Features } from "@/components/landing/features"
 import { Faq } from "@/components/landing/faq"
@@ -28,9 +27,8 @@ export default function Home() {
             Ziplinker
           </Link>
           <nav className="flex items-center gap-3">
-            <ThemeToggle />
             <Link
-              href="/signup"
+              href="/login"
               className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-5 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-deep active:translate-y-px"
             >
               Get started
@@ -56,7 +54,7 @@ export default function Home() {
 
           <div className="mt-10 flex items-center gap-4">
             <Link
-              href="/signup"
+              href="/login"
               className="inline-flex h-10 items-center justify-center gap-2 rounded-md bg-primary px-6 text-sm font-medium text-primary-foreground transition-all hover:bg-primary-deep active:translate-y-px"
             >
               Start shortening

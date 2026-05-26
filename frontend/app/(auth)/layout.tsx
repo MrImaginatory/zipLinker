@@ -1,5 +1,4 @@
 import Link from "next/link"
-import { ThemeToggle } from "@/components/theme-toggle"
 import { SunsetStripe } from "@/components/landing/sunset-stripe"
 
 export default function AuthLayout({
@@ -9,9 +8,6 @@ export default function AuthLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      <div className="fixed right-4 top-4 z-20">
-        <ThemeToggle />
-      </div>
 
       <header className="relative z-10 mx-auto flex w-full max-w-7xl items-center justify-between px-6 py-5 sm:px-10">
         <Link href="/" className="flex items-center gap-2 text-lg font-semibold tracking-tight text-ink dark:text-zinc-100">
