@@ -2,6 +2,7 @@
 
 import { useRef, useMemo } from "react"
 import { Canvas, useFrame } from "@react-three/fiber"
+import { useTheme } from "next-themes"
 import * as THREE from "three"
 
 function Link({
@@ -17,12 +18,14 @@ function Link({
 }) {
   const ref = useRef<THREE.Mesh>(null)
   const glowRef = useRef<THREE.Mesh>(null)
+  const timeRef = useRef(0)
 
   const startDelay = (index / total) * 0.5
 
-  useFrame(({ clock }) => {
+  useFrame((_, delta) => {
     if (!ref.current) return
-    const t = clock.getElapsedTime()
+    timeRef.current += delta
+    const t = timeRef.current
 
     const assembled = Math.min(Math.max((t - startDelay) * 1.5, 0), 1)
     const eased = 1 - Math.pow(1 - assembled, 3)
@@ -89,10 +92,13 @@ function Chain() {
   }, [total])
 
   const groupRef = useRef<THREE.Group>(null)
-  useFrame(({ clock }) => {
+  const groupTimeRef = useRef(0)
+  useFrame((_, delta) => {
     if (!groupRef.current) return
-    groupRef.current.rotation.y = Math.sin(clock.getElapsedTime() * 0.12) * 0.25
-    groupRef.current.position.y = Math.sin(clock.getElapsedTime() * 0.18) * 0.06
+    groupTimeRef.current += delta
+    const t = groupTimeRef.current
+    groupRef.current.rotation.y = Math.sin(t * 0.12) * 0.25
+    groupRef.current.position.y = Math.sin(t * 0.18) * 0.06
   })
 
   return (
@@ -114,6 +120,9 @@ function Chain() {
 }
 
 export function ChainScene() {
+  const { resolvedTheme } = useTheme()
+  const isDark = resolvedTheme === "dark"
+
   return (
     <div className="absolute inset-0 -z-10">
       <Canvas
@@ -121,7 +130,7 @@ export function ChainScene() {
         dpr={[1, 1.5]}
         gl={{ antialias: true, alpha: true }}
       >
-        <color attach="background" args={["#0a0a0a"]} />
+        <color attach="background" args={[isDark ? "#0a0a0a" : "#faf6f0"]} />
         <Chain />
       </Canvas>
     </div>
