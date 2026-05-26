@@ -2,13 +2,20 @@
 
 import { useRouter } from "next/navigation"
 import { Calendar, LogOut, Mail, Shield, User } from "lucide-react"
+import { fetchApi } from "@/lib/api"
 
 export default function ProfilePage() {
   const router = useRouter()
 
-  function handleLogout() {
-    document.cookie = "connect.sid=; path=/; max-age=0"
-    router.push("/")
+  async function handleLogout() {
+    try {
+      await fetchApi("/users/logout", { method: "POST" }).catch(() => null)
+    } finally {
+      localStorage.clear()
+      sessionStorage.clear()
+      document.cookie = "connect.sid=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      router.push("/")
+    }
   }
 
   const user = {

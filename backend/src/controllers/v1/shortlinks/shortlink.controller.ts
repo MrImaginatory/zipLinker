@@ -57,6 +57,43 @@ const createShortLink = async (req: Request, res: Response) => {
     }
 }
 
+const updateLinks = async (req: Request, res: Response) => {
+    try {
+        const { urlId } = req.params;
+        const { longUrl, isActive } = req.body;
+
+        const urlExists = await ShortLinks.findByPk(urlId)
+
+        if (!urlExists) {
+            sendResponse(res, 404, "Url Not Found");
+            return
+        }
+
+        if (urlExists.userId !== req.session.userId) {
+            sendResponse(res, 403, "You are not authorized to update this url");
+            return
+        }
+
+        const updateUrl = await ShortLinks.update({
+            longUrl,
+            isActive
+        }, {
+            where: {
+                urlId
+            }
+        })
+
+        sendResponse(res, 200, "Url Updated Successfully", updateUrl);
+        return;
+    }
+    catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in updateLinks : ${error}`);
+        sendResponse(res, 500, "Internal Server Error");
+        return;
+    }
+
+}
+
 const getShortLinks = async (req: Request, res: Response) => {
     try {
 
@@ -66,7 +103,7 @@ const getShortLinks = async (req: Request, res: Response) => {
             where: {
                 userId
             },
-            attributes: ["longUrl", "isActive", "shortCode"]
+            attributes: ["urlId", "longUrl", "isActive", "shortCode", "clicks"]
         });
 
         if (!shortLinks) {
@@ -78,8 +115,10 @@ const getShortLinks = async (req: Request, res: Response) => {
             const shortUrl = config.BASE_URL + "/" + shortLink.shortCode;
 
             return {
+                urlId: shortLink.urlId,
                 longUrlLink: shortLink.longUrl,
-                shortUrl,
+                shortUrl: shortUrl,
+                noOfClicks: shortLink.clicks,
                 isActive: shortLink.isActive
             }
         })
@@ -88,6 +127,83 @@ const getShortLinks = async (req: Request, res: Response) => {
         return;
     } catch (error) {
         logger.error(`[${req.method} ${req.originalUrl}] Error in getShortLinks : ${error}`);
+        sendResponse(res, 500, "Internal Server Error");
+        return;
+    }
+}
+
+const getLinkDetails = async (req: Request, res: Response) => {
+    try {
+        const { urlId } = req.params;
+
+        // Check if urlId is a valid UUID format to prevent Sequelize from throwing an error
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (typeof urlId !== "string" || !uuidRegex.test(urlId)) {
+            sendResponse(res, 404, "Short Link Not Found");
+            return;
+        }
+
+        const shortLink = await ShortLinks.findOne({
+            where: {
+                urlId
+            }
+        });
+
+        if (!shortLink) {
+            sendResponse(res, 404, "Short Link Not Found");
+            return
+        }
+
+        const shortUrl = config.BASE_URL + "/" + shortLink.shortCode;
+
+        const respData = {
+            longUrlLink: shortLink.longUrl,
+            shortUrl: shortUrl,
+            noOfClicks: shortLink.clicks,
+            isActive: shortLink.isActive
+        }
+
+        sendResponse(res, 200, "Short Link Details Fetched Successfully", respData);
+        return;
+    } catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in getLinkDetails : ${error}`);
+        sendResponse(res, 500, "Internal Server Error");
+        return;
+    }
+}
+
+const getShortLinkCount = async (req: Request, res: Response) => {
+    try {
+        const urlId = req.params.urlId;
+
+        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+        if (typeof urlId !== "string" || !uuidRegex.test(urlId)) {
+            sendResponse(res, 404, "Short Link Not Found");
+            return;
+        }
+
+        const shortLink = await ShortLinks.findOne({
+            where: {
+                urlId
+            },
+            attributes: ["clicks", "userId"]
+        })
+
+        if (!shortLink) {
+            sendResponse(res, 404, "Short Link Not Found");
+            return;
+        }
+
+        if (shortLink.userId !== req.session.userId) {
+            sendResponse(res, 403, "You are not authorized to view this short link");
+            return;
+        }
+
+        sendResponse(res, 200, "Short Link Count Fetched Successfully", shortLink.clicks);
+        return;
+    }
+    catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in getShortLinkCount : ${error}`);
         sendResponse(res, 500, "Internal Server Error");
         return;
     }
@@ -125,4 +241,4 @@ const getRedirectLink = async (req: Request, res: Response) => {
     }
 }
 
-export { createShortLink, getShortLinks, getRedirectLink }
+export { createShortLink, updateLinks, getShortLinks, getLinkDetails, getRedirectLink, getShortLinkCount }

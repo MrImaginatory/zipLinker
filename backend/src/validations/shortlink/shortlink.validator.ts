@@ -7,4 +7,14 @@ const createShortLinkValidator = z.object({
     })
 });
 
-export { createShortLinkValidator };
+const updateShortLinkValidator = z.object({
+    params: z.object({
+        urlId: z.string().uuid("Invalid Url Id").trim()
+    }),
+    body: z.object({
+        longUrl: z.string().min(6, "Url Length Needs to be minimum of 6 chars").max(2000, "Url Length Needs to be Maximum of 2000 chars").url("Please enter a valid url").trim(),
+        isActive: z.boolean().optional().default(true)
+    })
+});
+
+export { createShortLinkValidator, updateShortLinkValidator };

@@ -51,7 +51,27 @@ const loginController = async (req: Request, res: Response) => {
     }
 }
 
+const logoutController = async (req: Request, res: Response) => {
+    try {
+        req.session.destroy((err) => {
+            if (err) {
+                logger.error(`Error destroying session: ${err}`);
+                sendResponse(res, 500, "Internal Server Error");
+                return;
+            }
+            res.clearCookie("connect.sid");
+            sendResponse(res, 200, "User Logged Out Successfully");
+            return;
+        });
+    } catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in logoutController : ${error}`);
+        sendResponse(res, 500, "Internal Server Error");
+        return;
+    }
+}
+
 export {
     signupController,
-    loginController
+    loginController,
+    logoutController
 }

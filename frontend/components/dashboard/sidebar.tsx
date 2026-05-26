@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { BarChart3, Link2, LogOut, User, ChevronLeft, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Logo } from "@/components/logo"
+import { fetchApi } from "@/lib/api"
 
 const navItems = [
   { href: "/dashboard/insights", label: "Insights", icon: BarChart3 },
@@ -34,9 +35,15 @@ export function Sidebar() {
     localStorage.setItem("sidebar_collapsed", String(nextState))
   }
 
-  function handleLogout() {
-    document.cookie = "connect.sid=; path=/; max-age=0"
-    router.push("/")
+  async function handleLogout() {
+    try {
+      await fetchApi("/users/logout", { method: "POST" }).catch(() => null)
+    } finally {
+      localStorage.clear()
+      sessionStorage.clear()
+      document.cookie = "connect.sid=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT"
+      router.push("/")
+    }
   }
 
   return (
