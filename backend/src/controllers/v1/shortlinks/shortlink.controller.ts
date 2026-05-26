@@ -1,4 +1,5 @@
 import ShortLinks from "../../../models/links/link.model.js";
+import ClickLog from "../../../models/links/clickLog.model.js";
 import { Request, Response } from "express";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
@@ -231,6 +232,9 @@ const getRedirectLink = async (req: Request, res: Response) => {
 
         shortLink.clicks++;
         await shortLink.save();
+
+        // Log the click event for trend analysis
+        await ClickLog.create({ urlId: shortLink.urlId });
 
         res.redirect(shortLink.longUrl);
     } catch (error) {

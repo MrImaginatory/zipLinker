@@ -13,6 +13,7 @@ import logger, { requestLogger } from "./utils/logger.util.js"
 
 import userRouter from "./routes/v1/users/user.route.js"
 import shortLinkRouter from "./routes/v1/shortLinks/shortLink.route.js"
+import dashboardRouter from "./routes/v1/dashboard/dashboard.route.js"
 
 import { getRedirectLink } from "./controllers/v1/shortlinks/shortlink.controller.js";
 
@@ -56,6 +57,7 @@ app.use(express.urlencoded({
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/shortlinks", shortLinkRouter);
+app.use("/api/v1/dashboard", dashboardRouter);
 app.use("/:shortCode", getRedirectLink);
 
 const connectDataBase = async () => {
