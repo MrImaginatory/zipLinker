@@ -6,10 +6,13 @@ import { FormField } from "@/components/auth/form-field"
 import { PasswordInput } from "@/components/auth/password-input"
 import { SubmitButton } from "@/components/auth/submit-button"
 
+import { fetchApi } from "@/lib/api"
+
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ email: "", password: "" })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [serverError, setServerError] = useState("")
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
@@ -21,6 +24,7 @@ export default function LoginPage() {
         return next
       })
     }
+    setServerError("")
   }
 
   function validate() {
@@ -37,16 +41,23 @@ export default function LoginPage() {
     const errs = validate()
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
+    
     setLoading(true)
+    setServerError("")
     
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1200))
-    
-    // Set a simple auth token cookie for the prototype
-    document.cookie = "auth-token=demo-token-123; path=/; max-age=86400"
-    
-    // Redirect to dashboard (hard refresh so middleware kicks in)
-    window.location.href = "/dashboard"
+    try {
+      await fetchApi("/users/login", {
+        method: "POST",
+        body: JSON.stringify(form)
+      })
+      
+      // Redirect to dashboard (hard refresh so middleware kicks in)
+      window.location.href = "/dashboard"
+    } catch (err: any) {
+      setServerError(err.message || "Failed to sign in")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -57,6 +68,11 @@ export default function LoginPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        {serverError && (
+          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            {serverError}
+          </div>
+        )}
         <FormField
           label="Email"
           name="email"

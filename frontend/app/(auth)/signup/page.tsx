@@ -6,10 +6,13 @@ import { FormField } from "@/components/auth/form-field"
 import { PasswordInput } from "@/components/auth/password-input"
 import { SubmitButton } from "@/components/auth/submit-button"
 
+import { fetchApi } from "@/lib/api"
+
 export default function SignupPage() {
   const [loading, setLoading] = useState(false)
-  const [form, setForm] = useState({ username: "", email: "", password: "" })
+  const [form, setForm] = useState({ userName: "", email: "", password: "" })
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [serverError, setServerError] = useState("")
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     const { name, value } = e.target
@@ -21,13 +24,14 @@ export default function SignupPage() {
         return next
       })
     }
+    setServerError("")
   }
 
   function validate() {
     const errs: Record<string, string> = {}
-    if (!form.username) errs.username = "Username is required"
-    else if (form.username.length < 3)
-      errs.username = "Username must be at least 3 characters"
+    if (!form.userName) errs.userName = "Username is required"
+    else if (form.userName.length < 3)
+      errs.userName = "Username must be at least 3 characters"
     if (!form.email) errs.email = "Email is required"
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email))
       errs.email = "Enter a valid email address"
@@ -42,16 +46,23 @@ export default function SignupPage() {
     const errs = validate()
     setErrors(errs)
     if (Object.keys(errs).length > 0) return
+    
     setLoading(true)
+    setServerError("")
     
-    // Simulate API call
-    await new Promise((r) => setTimeout(r, 1200))
-    
-    // Set a simple auth token cookie for the prototype
-    document.cookie = "auth-token=demo-token-123; path=/; max-age=86400"
-    
-    // Redirect to dashboard (hard refresh so middleware kicks in)
-    window.location.href = "/dashboard"
+    try {
+      await fetchApi("/users/register", {
+        method: "POST",
+        body: JSON.stringify(form)
+      })
+      
+      // Redirect to login page
+      window.location.href = "/login"
+    } catch (err: any) {
+      setServerError(err.message || "Failed to create account")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -62,15 +73,20 @@ export default function SignupPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-5" noValidate>
+        {serverError && (
+          <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">
+            {serverError}
+          </div>
+        )}
         <FormField
           label="Username"
-          name="username"
+          name="userName"
           placeholder="yourname"
           required
           autoComplete="username"
-          value={form.username}
+          value={form.userName}
           onChange={handleChange}
-          error={errors.username}
+          error={errors.userName}
         />
         <FormField
           label="Email"
