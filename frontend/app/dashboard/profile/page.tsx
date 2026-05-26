@@ -96,7 +96,7 @@ export default function ProfilePage() {
             </p>
             <button
               onClick={handleLogout}
-              className="mt-4 flex items-center gap-2 rounded-md bg-ink px-5 py-2.5 text-sm font-medium text-on-dark transition-colors hover:bg-ink/90"
+              className="mt-4 flex items-center gap-2 rounded-md bg-destructive px-5 py-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-destructive/90 shadow-sm"
             >
               <LogOut className="h-4 w-4" />
               Sign Out

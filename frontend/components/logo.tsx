@@ -10,6 +10,7 @@ interface LogoProps {
   appearance?: LogoAppearance
   size?: LogoSize
   className?: string
+  showText?: boolean
 }
 
 const productName = process.env.NEXT_PUBLIC_PRODUCT_NAME || ""
@@ -28,7 +29,7 @@ const sizeClasses = {
   md: "h-5",
 }
 
-export function Logo({ appearance = "auto", size = "md", className }: LogoProps) {
+export function Logo({ appearance = "auto", size = "md", className, showText = true }: LogoProps) {
   const { resolvedTheme } = useTheme()
 
   return (
@@ -38,7 +39,7 @@ export function Logo({ appearance = "auto", size = "md", className }: LogoProps)
         alt={productName || "Ziplinker"}
         className={cn(sizeClasses[size], "w-auto", className)}
       />
-      {productName && (
+      {productName && showText && (
         <span className="font-display text-xl tracking-tight text-primary max-sm:hidden">
           {productName}
         </span>
