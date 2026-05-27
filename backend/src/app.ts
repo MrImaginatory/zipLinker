@@ -75,7 +75,7 @@ app.use(express.urlencoded({
     type: 'application/x-www-form-urlencoded'
 }));
 
-app.use("/api/v1/health", async (req: Request, res: Response) => {
+app.use("/api/v1/health", async (_req: Request, res: Response) => {
     sendResponse(res, 200, "Health is OK", null);
     return;
 });
