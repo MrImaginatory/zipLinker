@@ -3,6 +3,7 @@ import { Request, Response } from "express";
 import bcrypt from "bcrypt";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
+import { signToken } from "../../../utils/jwt.util.js";
 
 const signupController = async (req: Request, res: Response) => {
     const { email, userName, password } = req.body;
@@ -44,7 +45,17 @@ const loginController = async (req: Request, res: Response) => {
             return sendResponse(res, 401, "Invalid Credentials");
         }
         req.session.userId = user.userId;
-        return sendResponse(res, 200, "User Logged In Successfully", user.userId);
+        const token = signToken(user.userId);
+
+        res.cookie('jwt_token', token, {
+            httpOnly: true,
+            secure: true,
+            maxAge: 60 * 60 * 1000
+        });
+
+        res.setHeader("Authorization", `Bearer ${token}`);
+
+        return sendResponse(res, 200, "User Logged In Successfully", { token });
     } catch (error) {
         logger.error(`[${req.method} ${req.originalUrl}] Error in loginController : ${error}`);
         return sendResponse(res, 500, "Internal Server Error");

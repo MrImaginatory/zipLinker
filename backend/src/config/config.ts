@@ -1,6 +1,5 @@
 import dotenv from "dotenv";
 
-
 dotenv.config();
 
 const missingKeys: string[] = [];
@@ -61,6 +60,11 @@ const config = {
     },
 
     NODE_ENV: getEnv("NODE_ENV", true),
+
+    JWT: {
+        SECRET: getEnv("JWT_SECRET", true),
+        EXPIRES_IN: getEnv("JWT_EXPIRES_IN", true)
+    }
 }
 
 if (missingKeys.length > 0) {

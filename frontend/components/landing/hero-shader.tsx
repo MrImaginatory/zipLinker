@@ -1,6 +1,6 @@
 "use client"
 
-import { useRef } from "react"
+import { useRef, useEffect } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import * as THREE from "three"
 
@@ -41,6 +41,16 @@ function ShaderQuad() {
   const materialRef = useRef<THREE.ShaderMaterial>(null)
   const { width, height } = useThree((s) => s.viewport)
   const size = useThree((s) => s.size)
+  const mouse = useRef({ x: 0.5, y: 0.5 })
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouse.current.x = e.clientX / window.innerWidth;
+      mouse.current.y = 1.0 - (e.clientY / window.innerHeight);
+    }
+    window.addEventListener("mousemove", handleMouseMove)
+    return () => window.removeEventListener("mousemove", handleMouseMove)
+  }, [])
 
   useFrame((state, delta) => {
     if (!materialRef.current) return
@@ -50,16 +60,14 @@ function ShaderQuad() {
     )
     
     // Smooth out mouse movement using lerp
-    const targetX = (state.pointer.x + 1) / 2;
-    const targetY = (state.pointer.y + 1) / 2;
     materialRef.current.uniforms.uMouse.value.x = THREE.MathUtils.lerp(
       materialRef.current.uniforms.uMouse.value.x,
-      targetX,
+      mouse.current.x,
       0.05
     );
     materialRef.current.uniforms.uMouse.value.y = THREE.MathUtils.lerp(
       materialRef.current.uniforms.uMouse.value.y,
-      targetY,
+      mouse.current.y,
       0.05
     );
   })

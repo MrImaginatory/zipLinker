@@ -20,6 +20,7 @@ import dashboardRouter from "./routes/v1/dashboard/dashboard.route.js"
 import { getRedirectLink } from "./controllers/v1/shortlinks/shortlink.controller.js";
 
 import sendResponse from "./utils/responseHandler.util.js";
+import { errorHandler } from "./middlewares/v1/error.middleware.js";
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use(cors(
         origin: config.ALLOWED_ORIGINS,
         methods: ["GET", "POST", "PUT", "DELETE"],
         allowedHeaders: ["Content-Type", "Authorization"],
+        exposedHeaders: ["Authorization"],
         credentials: true
     }
 ));
@@ -85,6 +87,8 @@ app.use("/api/v1/shortlinks", shortLinkRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 
 app.use("/:shortCode", getRedirectLink);
+
+app.use(errorHandler);
 
 const connectDataBase = async () => {
     try {
