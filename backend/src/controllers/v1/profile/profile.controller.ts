@@ -5,16 +5,12 @@ import logger from "../../../utils/logger.util.js";
 
 const getProfileDetails = async (req: Request, res: Response) => {
     try {
-        const userId = req.session.userId;
-
-        if (!userId) {
-            return sendResponse(res, 401, "Unauthorized");
-        }
+        const userId = req.userId!;
 
         const user = await User.findOne({ where: { userId } });
 
         if (!user) {
-            return sendResponse(res, 401, "Unauthorized");
+            return sendResponse(res, 404, "User not found");
         }
 
         return sendResponse(res, 200, "User Profile", user);

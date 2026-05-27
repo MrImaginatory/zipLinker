@@ -7,12 +7,7 @@ import logger from "../../../utils/logger.util.js";
 
 const dashboardAnalytics = async (req: Request, res: Response) => {
     try {
-        const userId = req.session.userId;
-
-        if (!userId) {
-            sendResponse(res, 401, "Unauthorized");
-            return;
-        }
+        const userId = req.userId!;
 
         const shortLinks = await ShortLinks.findAll({ where: { userId } });
 
@@ -127,12 +122,7 @@ const dashboardAnalytics = async (req: Request, res: Response) => {
 
 const recentActivity = async (req: Request, res: Response) => {
     try {
-        const userId = req.session.userId;
-
-        if (!userId) {
-            sendResponse(res, 401, "Unauthorized");
-            return;
-        }
+        const userId = req.userId!;
 
         const shortLinks = await ShortLinks.findAll({
             where: { userId }
@@ -221,7 +211,7 @@ const recentActivity = async (req: Request, res: Response) => {
             const d = new Date();
             d.setDate(d.getDate() - i);
             d.setHours(0, 0, 0, 0);
-            
+
             const start = new Date(d);
             const end = new Date(d);
             end.setHours(23, 59, 59, 999);
@@ -244,10 +234,10 @@ const recentActivity = async (req: Request, res: Response) => {
         for (let i = 11; i >= 0; i--) {
             const d = new Date();
             d.setMonth(d.getMonth() - i);
-            
+
             const year = d.getFullYear();
             const month = d.getMonth();
-            
+
             const start = new Date(year, month, 1, 0, 0, 0, 0);
             const end = new Date(year, month + 1, 0, 23, 59, 59, 999);
 

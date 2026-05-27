@@ -71,6 +71,8 @@ const logoutController = async (req: Request, res: Response) => {
                 return;
             }
             res.clearCookie("connect.sid");
+            res.setHeader("Authorization", "");
+            res.clearCookie('jwt_token');
             sendResponse(res, 200, "User Logged Out Successfully");
             return;
         });

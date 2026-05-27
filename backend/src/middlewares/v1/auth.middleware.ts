@@ -16,6 +16,15 @@ export const isAuthenticated = (req: Request, res: Response, next: NextFunction)
         return;
     }
 
+    if ('error' in decodedToken) {
+        if (decodedToken.error === 'expired') {
+            sendResponse(res, 401, "Session timed out please login again");
+            return;
+        }
+        sendResponse(res, 401, "Unauthorized: Invalid token");
+        return;
+    }
+
     req.userId = decodedToken.userId;
 
     next();

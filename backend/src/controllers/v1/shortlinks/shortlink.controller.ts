@@ -10,7 +10,7 @@ const createShortLink = async (req: Request, res: Response) => {
     const { longUrl, isActive } = req.body
 
     try {
-        const userId = req.session.userId!;
+        const userId = req.userId!;
 
         const longUrlExists = await ShortLinks.findOne({
             where: {
@@ -70,7 +70,7 @@ const updateLinks = async (req: Request, res: Response) => {
             return
         }
 
-        if (urlExists.userId !== req.session.userId) {
+        if (urlExists.userId !== req.userId) {
             sendResponse(res, 403, "You are not authorized to update this url");
             return
         }
@@ -98,7 +98,7 @@ const updateLinks = async (req: Request, res: Response) => {
 const getShortLinks = async (req: Request, res: Response) => {
     try {
 
-        const userId = req.session.userId!;
+        const userId = req.userId!;
 
         const shortLinks = await ShortLinks.findAll({
             where: {
@@ -195,7 +195,7 @@ const getShortLinkCount = async (req: Request, res: Response) => {
             return;
         }
 
-        if (shortLink.userId !== req.session.userId) {
+        if (shortLink.userId !== req.userId) {
             sendResponse(res, 403, "You are not authorized to view this short link");
             return;
         }

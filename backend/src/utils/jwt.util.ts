@@ -12,10 +12,13 @@ export const signToken = (userId: string) => {
     })
 }
 
-export const verifyToken = (token: string): TokenPayload | null => {
+export const verifyToken = (token: string): TokenPayload | { error: string } | null => {
     try {
         return jwt.verify(token, config.JWT.SECRET) as TokenPayload;
-    } catch (error) {
+    } catch (error: any) {
+        if (error.name === 'TokenExpiredError') {
+            return { error: 'expired' };
+        }
         return null;
     }
 }
