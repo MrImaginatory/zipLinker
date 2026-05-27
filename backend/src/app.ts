@@ -3,6 +3,8 @@ import cors from "cors";
 import config from "./config/config.js";
 import session from "express-session"
 import cookieParser from "cookie-parser";
+import rateLimit from "express-rate-limit";
+import type { Request, Response } from "express";
 
 import { sequelize } from "./database/database.js";
 import connectDB from "./database/database.js";
@@ -17,10 +19,29 @@ import dashboardRouter from "./routes/v1/dashboard/dashboard.route.js"
 
 import { getRedirectLink } from "./controllers/v1/shortlinks/shortlink.controller.js";
 
+import sendResponse from "./utils/responseHandler.util.js";
+
 const app = express();
 
 app.use(requestLogger);
 app.use(cookieParser());
+
+
+const limiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 100,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: {
+        success: false,
+        message: "Too many requests, please try again later",
+        statusCode: 429,
+        data: null
+    },
+    statusCode: 429
+})
+
+app.use(limiter)
 
 app.use(cors(
     {
@@ -54,10 +75,15 @@ app.use(express.urlencoded({
     type: 'application/x-www-form-urlencoded'
 }));
 
+app.use("/api/v1/health", async (req: Request, res: Response) => {
+    sendResponse(res, 200, "Health is OK", null);
+    return;
+});
 
 app.use("/api/v1/users", userRouter);
 app.use("/api/v1/shortlinks", shortLinkRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
+
 app.use("/:shortCode", getRedirectLink);
 
 const connectDataBase = async () => {
