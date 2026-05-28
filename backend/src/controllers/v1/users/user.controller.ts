@@ -25,7 +25,7 @@ const signupController = async (req: Request, res: Response) => {
             userName,
             password: hashedPassword
         })
-        
+
         return sendResponse(res, 201, "User Created Successfully", user.userId);
     } catch (error) {
         logger.error(`[${req.method} ${req.originalUrl}] Error in signupController : ${error}`);
@@ -55,6 +55,20 @@ const loginController = async (req: Request, res: Response) => {
         // Store session explicitly
         req.session.userId = user.userId;
 
+        // Set token in cookie since middleware checks for req.cookies.authToken
+        res.cookie('authToken', tokens.accessToken, {
+            httpOnly: true,
+            secure: config.NODE_ENV === 'production',
+            maxAge: 1000 * 60 * 15 // Match access token expiry (15m approx)
+        });
+
+        // Set refresh token in cookie as well, so frontend doesn't need to store it in localStorage
+        res.cookie('refreshToken', tokens.refreshToken, {
+            httpOnly: true,
+            secure: config.NODE_ENV === 'production',
+            maxAge: 1000 * 60 * 60 * 24 * 7 // Match refresh token expiry (7d approx)
+        });
+
         return sendResponse(res, 200, "User Logged In Successfully", tokens);
     } catch (error) {
         logger.error(`[${req.method} ${req.originalUrl}] Error in loginController : ${error}`);
@@ -64,8 +78,8 @@ const loginController = async (req: Request, res: Response) => {
 
 const logoutController = async (req: Request, res: Response) => {
     try {
-        const refreshToken = req.body.refreshToken;
-        
+        const refreshToken = req.cookies.refreshToken;
+
         // Purge tokens from Redis if refresh token is provided
         if (refreshToken) {
             try {
@@ -78,13 +92,13 @@ const logoutController = async (req: Request, res: Response) => {
                 logger.error(`Error decoding refresh token on logout: ${e}`);
             }
         }
-        
+
         req.session.destroy((err) => {
             if (err) {
                 logger.error(`Error destroying session during logout: ${err}`);
             }
         });
-        
+
         res.clearCookie("connect.sid");
         res.clearCookie('jwt_token');
         sendResponse(res, 200, "User Logged Out Successfully");
@@ -104,7 +118,7 @@ const refreshController = async (req: Request, res: Response) => {
     try {
         // Verify refresh token signature and expiration
         const decoded = jwt.verify(refreshToken, config.JWT.SECRET) as jwt.JwtPayload;
-        
+
         if (decoded.type !== "refresh") {
             return sendResponse(res, 401, "Invalid token type");
         }
@@ -128,6 +142,18 @@ const refreshController = async (req: Request, res: Response) => {
 
         // Generate and store new tokens
         const tokens = await generateAndStoreTokens(userId, clientIp);
+
+        res.cookie('authToken', tokens.accessToken, {
+            httpOnly: true,
+            secure: config.NODE_ENV === 'production',
+            maxAge: 1000 * 60 * 15
+        });
+
+        res.cookie('refreshToken', tokens.refreshToken, {
+            httpOnly: true,
+            secure: config.NODE_ENV === 'production',
+            maxAge: 1000 * 60 * 60 * 24 * 7
+        });
 
         return sendResponse(res, 200, "Tokens Refreshed Successfully", tokens);
     } catch (error: any) {

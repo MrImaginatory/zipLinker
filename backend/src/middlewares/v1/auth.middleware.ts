@@ -4,7 +4,7 @@ import { verifyToken } from "../../utils/jwt.util.js";
 import redisClient from "../../database/redis.js";
 
 export const isAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization?.split(' ')[1];
+    const token = req.cookies.authToken || req.headers.authorization?.split(' ')[1];
     if (!token) {
         sendResponse(res, 401, "Unauthorized: Please login to perform this action");
         return;
@@ -37,7 +37,7 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
 
             const parsedData = JSON.parse(storedToken);
             const clientIp = req.ip || req.socket.remoteAddress || "0.0.0.0";
-            
+
             if (parsedData.ip !== clientIp) {
                 console.warn(`IP mismatch for user ${decodedToken.userId}. Expected ${parsedData.ip}, got ${clientIp}`);
                 sendResponse(res, 403, "Forbidden: IP address mismatch");

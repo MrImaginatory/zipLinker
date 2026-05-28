@@ -28,15 +28,30 @@ import { RedisStore as RateLimitRedisStore } from "rate-limit-redis";
 
 const app = express();
 
-app.set('trust proxy', true)
+app.set('trust proxy', 1)
 
 app.use(requestLogger);
 app.use(cookieParser());
 
+// Create a wrapper for ioredis to be compatible with connect-redis v9 (which expects node-redis v4 semantics)
+const connectRedisClient = {
+    get: (key: string) => redisClient.get(key),
+    set: (key: string, value: string, opts?: any) => {
+        if (opts && typeof opts === "object") {
+            if (opts.PX) return redisClient.set(key, value, "PX", opts.PX);
+            if (opts.EX) return redisClient.set(key, value, "EX", opts.EX);
+        }
+        return redisClient.set(key, value);
+    },
+    del: (key: string) => redisClient.del(key),
+    expire: (key: string, seconds: number) => redisClient.expire(key, seconds),
+    pexpire: (key: string, ms: number) => redisClient.pexpire(key, ms)
+} as any;
+
 // Initialize Redis session store
 app.use(session({
     store: new RedisStore({
-        client: redisClient,
+        client: connectRedisClient,
         prefix: "auth:session:"
     }),
     secret: config.SESSION.SECRET,
@@ -55,6 +70,7 @@ const limiter = rateLimit({
     standardHeaders: true,
     legacyHeaders: false,
     store: new RateLimitRedisStore({
+        // ioredis call signature compatibility
         sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
     }),
     message: {
