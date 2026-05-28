@@ -100,8 +100,8 @@ const logoutController = async (req: Request, res: Response) => {
             }
         });
 
-        res.clearCookie("connect.sid");
-        res.clearCookie('jwt_token');
+        res.clearCookie("authToken");
+        res.clearCookie("refreshToken");
         sendResponse(res, 200, "User Logged Out Successfully");
     } catch (error) {
         logger.error(`Error in logoutController : ${error}`);
@@ -185,7 +185,7 @@ const getSessionsController = async (req: Request, res: Response) => {
                 const sessionData = JSON.parse(sessionDataStr);
                 sessions.push({
                     ...sessionData,
-                    isCurrentDevice: jti === currentJti
+                    isCurrentSession: jti === currentJti
                 });
             } else {
                 // Clean up expired session from the set
@@ -210,6 +210,10 @@ const revokeSessionController = async (req: Request, res: Response) => {
 
         if (!userId || !targetJti) {
             return sendResponse(res, 400, "User ID and session JTI are required");
+        }
+
+        if (targetJti === req.jti) {
+            return sendResponse(res, 403, "Cannot revoke the current active session");
         }
 
         // Remove from Redis
