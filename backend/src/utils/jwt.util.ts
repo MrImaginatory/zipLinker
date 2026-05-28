@@ -3,13 +3,16 @@ import config from "../config/config.js";
 import redisClient from "../database/redis.js";
 import { v4 as uuidv4 } from "uuid";
 
+import geoip from "geoip-lite";
+import { UAParser } from "ua-parser-js";
+
 export interface TokenPayload {
     userId: string;
     jti?: string;
     type?: "access" | "refresh";
 }
 
-export const generateAndStoreTokens = async (userId: string, ip: string) => {
+export const generateAndStoreTokens = async (userId: string, ip: string, userAgentStr: string = "") => {
     const jti = uuidv4();
     
     const accessToken = jwt.sign({ userId, jti, type: "access" }, config.JWT.SECRET, {
@@ -27,19 +30,29 @@ export const generateAndStoreTokens = async (userId: string, ip: string) => {
     const accessTTL = accessDecoded.exp! - currentSeconds;
     const refreshTTL = refreshDecoded.exp! - currentSeconds;
 
-    await redisClient.set(
-        `auth:access:${userId}:${jti}`, 
-        JSON.stringify({ ip }), 
-        "EX", 
-        accessTTL
-    );
+    // Parse User Agent and IP
+    const parser = new UAParser(userAgentStr);
+    const browser = `${parser.getBrowser().name || "Unknown"} ${parser.getBrowser().version || ""}`.trim();
+    const os = `${parser.getOS().name || "Unknown"} ${parser.getOS().version || ""}`.trim();
     
-    await redisClient.set(
-        `auth:refresh:${userId}:${jti}`, 
-        JSON.stringify({ ip }), 
-        "EX", 
-        refreshTTL
-    );
+    const geo = geoip.lookup(ip);
+    const location = geo ? `${geo.city || "Unknown City"}, ${geo.country || "Unknown Country"}` : "Unknown Location";
+
+    const sessionData = JSON.stringify({
+        ip,
+        userAgent: userAgentStr,
+        browser,
+        os,
+        location,
+        loginTime: new Date().toISOString(),
+        jti
+    });
+
+    await redisClient.set(`auth:access:${userId}:${jti}`, sessionData, "EX", accessTTL);
+    await redisClient.set(`auth:refresh:${userId}:${jti}`, sessionData, "EX", refreshTTL);
+
+    // Track active sessions for this user
+    await redisClient.sadd(`user:sessions:${userId}`, jti);
 
     return { accessToken, refreshToken };
 }

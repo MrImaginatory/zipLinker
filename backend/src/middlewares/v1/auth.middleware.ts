@@ -51,6 +51,9 @@ export const isAuthenticated = async (req: Request, res: Response, next: NextFun
     }
 
     req.userId = decodedToken.userId;
+    if (decodedToken.jti) {
+        req.jti = decodedToken.jti;
+    }
 
     next();
 };

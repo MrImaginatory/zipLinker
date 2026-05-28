@@ -50,7 +50,8 @@ const loginController = async (req: Request, res: Response) => {
         }
 
         const clientIp = req.ip || req.socket.remoteAddress || "0.0.0.0";
-        const tokens = await generateAndStoreTokens(user.userId, clientIp);
+        const userAgent = req.headers["user-agent"] || "";
+        const tokens = await generateAndStoreTokens(user.userId, clientIp, userAgent);
 
         // Store session explicitly
         req.session.userId = user.userId;
@@ -141,7 +142,8 @@ const refreshController = async (req: Request, res: Response) => {
         await redisClient.del(`auth:refresh:${userId}:${jti}`);
 
         // Generate and store new tokens
-        const tokens = await generateAndStoreTokens(userId, clientIp);
+        const userAgent = req.headers["user-agent"] || "";
+        const tokens = await generateAndStoreTokens(userId, clientIp, userAgent);
 
         res.cookie('authToken', tokens.accessToken, {
             httpOnly: true,
@@ -165,9 +167,68 @@ const refreshController = async (req: Request, res: Response) => {
     }
 }
 
+const getSessionsController = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const currentJti = req.jti;
+
+        if (!userId) {
+            return sendResponse(res, 401, "Unauthorized");
+        }
+
+        const jtis = await redisClient.smembers(`user:sessions:${userId}`);
+        const sessions = [];
+
+        for (const jti of jtis) {
+            const sessionDataStr = await redisClient.get(`auth:access:${userId}:${jti}`);
+            if (sessionDataStr) {
+                const sessionData = JSON.parse(sessionDataStr);
+                sessions.push({
+                    ...sessionData,
+                    isCurrentDevice: jti === currentJti
+                });
+            } else {
+                // Clean up expired session from the set
+                await redisClient.srem(`user:sessions:${userId}`, jti);
+            }
+        }
+
+        // Sort sessions by loginTime descending
+        sessions.sort((a, b) => new Date(b.loginTime).getTime() - new Date(a.loginTime).getTime());
+
+        return sendResponse(res, 200, "Active sessions retrieved successfully", sessions);
+    } catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in getSessionsController : ${error}`);
+        return sendResponse(res, 500, "Internal Server Error");
+    }
+}
+
+const revokeSessionController = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const targetJti = req.params.jti;
+
+        if (!userId || !targetJti) {
+            return sendResponse(res, 400, "User ID and session JTI are required");
+        }
+
+        // Remove from Redis
+        await redisClient.del(`auth:access:${userId}:${targetJti}`);
+        await redisClient.del(`auth:refresh:${userId}:${targetJti}`);
+        await redisClient.srem(`user:sessions:${userId}`, targetJti as string);
+
+        return sendResponse(res, 200, "Session revoked successfully");
+    } catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in revokeSessionController : ${error}`);
+        return sendResponse(res, 500, "Internal Server Error");
+    }
+}
+
 export {
     signupController,
     loginController,
     logoutController,
-    refreshController
+    refreshController,
+    getSessionsController,
+    revokeSessionController
 }
