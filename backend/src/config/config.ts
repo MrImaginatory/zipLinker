@@ -71,7 +71,8 @@ const config = {
 
     JWT: {
         SECRET: getEnv("JWT_SECRET", true),
-        EXPIRES_IN: getEnv("JWT_EXPIRES_IN", true)
+        EXPIRES_IN: getEnv("JWT_EXPIRES_IN", true),
+        REFRESH_EXPIRES_IN: getEnv("JWT_REFRESH_EXPIRES_IN", false) || "7d"
     }
 }
 
