@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Poppins, Geist_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { Toaster } from "sonner";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -50,6 +51,7 @@ export default function RootLayout({
           <div className="fixed bottom-6 right-6 z-50 hidden md:block">
             <ThemeToggle />
           </div>
+          <Toaster position="bottom-right" richColors />
         </ThemeProvider>
       </body>
     </html>

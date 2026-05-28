@@ -75,35 +75,25 @@ const limiter = rateLimit({
     }),
     message: {
         success: false,
-        message: "Too many requests, please try again later",
+        message: "Too many Requests please try again later",
         statusCode: 429,
         data: null
     },
     statusCode: 429
 })
 
-app.use(limiter)
-
 app.use(cors(
     {
         origin: config.ALLOWED_ORIGINS,
-        methods: ["GET", "POST", "PUT", "DELETE"],
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
         allowedHeaders: ["Content-Type", "Authorization"],
         exposedHeaders: ["Authorization"],
         credentials: true
     }
 ));
 
-app.use(session({
-    secret: config.SESSION.SECRET,
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-        maxAge: 1000 * 60 * 60 * 24 * 7,
-        httpOnly: true,
-        secure: config.NODE_ENV === "production"
-    }
-}));
+app.use(limiter)
+
 
 app.use(express.json({
     limit: "10mb",

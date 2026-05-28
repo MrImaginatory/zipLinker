@@ -1,8 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Copy, ExternalLink, Link2, AlertCircle, Check } from "lucide-react"
+import { Copy, ExternalLink, Link2, AlertCircle, Check, Edit2, X } from "lucide-react"
 import { fetchApi } from "@/lib/api"
+import { toast } from "sonner"
 
 interface ShortLink {
   urlId: string
@@ -20,6 +21,11 @@ export default function LinksPage() {
   const [error, setError] = useState<string | null>(null)
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
   const [copiedId, setCopiedId] = useState<string | null>(null)
+
+  // Editing state
+  const [editLinkId, setEditLinkId] = useState<string | null>(null)
+  const [editUrl, setEditUrl] = useState("")
+  const [isUpdating, setIsUpdating] = useState<string | null>(null)
 
   // Fetch all links on component mount
   useEffect(() => {
@@ -95,6 +101,58 @@ export default function LinksPage() {
         console.error("Failed to update clicks count", err)
       }
     }, 800)
+  }
+
+  async function handleToggleActive(id: string, currentActiveStatus: boolean) {
+    try {
+      setIsUpdating(id)
+      const res = await fetchApi(`/shortlinks/activate-deactivate/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ isActive: !currentActiveStatus }),
+      })
+      if (res && res.success) {
+        setLinks((prev) =>
+          prev.map((link) =>
+            link.urlId === id ? { ...link, isActive: !currentActiveStatus } : link
+          )
+        )
+        toast.success(!currentActiveStatus ? "Url Activated Successfully" : "Url Deactivated Successfully")
+      } else {
+        toast.error(res?.message || "Failed to toggle status")
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Error toggling status")
+    } finally {
+      setIsUpdating(null)
+    }
+  }
+
+  async function handleUpdateUrl(id: string, isActive: boolean) {
+    if (!editUrl.trim()) return
+
+    try {
+      setIsUpdating(id)
+      const res = await fetchApi(`/shortlinks/update/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ longUrl: editUrl.trim(), isActive }),
+      })
+      if (res && res.success) {
+        setLinks((prev) =>
+          prev.map((link) =>
+            link.urlId === id ? { ...link, longUrlLink: editUrl.trim() } : link
+          )
+        )
+        setEditLinkId(null)
+        setEditUrl("")
+        toast.success("Url Updated Successfully")
+      } else {
+        toast.error(res?.message || "Failed to update link")
+      }
+    } catch (err: any) {
+      toast.error(err?.message || "Error updating link")
+    } finally {
+      setIsUpdating(null)
+    }
   }
 
   return (
@@ -210,9 +268,26 @@ export default function LinksPage() {
                       </span>
                     )}
                   </div>
-                  <p className="truncate text-xs text-steel mt-1 font-mono max-w-lg" title={link.longUrlLink}>
-                    {link.longUrlLink}
-                  </p>
+                  {editLinkId === link.urlId ? (
+                    <div className="mt-2 flex items-center gap-2">
+                      <input
+                        type="url"
+                        value={editUrl}
+                        onChange={(e) => setEditUrl(e.target.value)}
+                        className="flex-1 rounded-md border border-input bg-background px-3 py-1.5 text-sm text-ink outline-none focus-within:border-primary focus-within:ring-1 focus-within:ring-primary transition-all"
+                        placeholder="Enter new destination URL"
+                        autoFocus
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") handleUpdateUrl(link.urlId, link.isActive)
+                          if (e.key === "Escape") setEditLinkId(null)
+                        }}
+                      />
+                    </div>
+                  ) : (
+                    <p className="truncate text-xs text-steel mt-1 font-mono max-w-lg" title={link.longUrlLink}>
+                      {link.longUrlLink}
+                    </p>
+                  )}
                 </div>
 
                 {/* Stats */}
@@ -225,24 +300,73 @@ export default function LinksPage() {
 
                 {/* Actions */}
                 <div className="flex items-center gap-1.5 shrink-0 justify-end">
-                  <button
-                    onClick={() => handleCopy(link.urlId, link.shortUrl)}
-                    title="Copy short link"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-beige-deep bg-cream text-charcoal hover:bg-cream-deeper hover:text-ink shadow-sm transition-all focus:outline-none"
-                  >
-                    {copiedId === link.urlId ? (
-                      <Check className="h-4.5 w-4.5 text-green-600" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )}
-                  </button>
-                  <button
-                    onClick={() => handleOpenLink(link.urlId, link.shortUrl)}
-                    title="Open short link"
-                    className="flex h-9 w-9 items-center justify-center rounded-lg border border-beige-deep bg-cream text-charcoal hover:bg-cream-deeper hover:text-ink shadow-sm transition-all focus:outline-none"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                  </button>
+                  {editLinkId === link.urlId ? (
+                    <>
+                      <button
+                        onClick={() => handleUpdateUrl(link.urlId, link.isActive)}
+                        title="Save"
+                        disabled={isUpdating === link.urlId}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-green-500/30 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 shadow-sm transition-all focus:outline-none disabled:opacity-50"
+                      >
+                        {isUpdating === link.urlId ? <div className="loader !w-4" style={{ "--loader-size": "16px" } as React.CSSProperties} /> : <Check className="h-4 w-4" />}
+                      </button>
+                      <button
+                        onClick={() => setEditLinkId(null)}
+                        title="Cancel"
+                        disabled={isUpdating === link.urlId}
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-destructive/30 bg-destructive/5 text-destructive hover:bg-destructive/10 shadow-sm transition-all focus:outline-none disabled:opacity-50"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Toggle Switch */}
+                      <button
+                        onClick={() => handleToggleActive(link.urlId, link.isActive)}
+                        disabled={isUpdating === link.urlId}
+                        title={link.isActive ? "Deactivate link" : "Activate link"}
+                        className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none mr-2 ${
+                          link.isActive ? "bg-primary" : "bg-steel/30"
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      >
+                        <span className="sr-only">Toggle active status</span>
+                        <span
+                          className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                            link.isActive ? "translate-x-4" : "translate-x-0"
+                          }`}
+                        />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditLinkId(link.urlId)
+                          setEditUrl(link.longUrlLink)
+                        }}
+                        title="Edit long URL"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-beige-deep bg-cream text-charcoal hover:bg-cream-deeper hover:text-ink shadow-sm transition-all focus:outline-none"
+                      >
+                        <Edit2 className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => handleCopy(link.urlId, link.shortUrl)}
+                        title="Copy short link"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-beige-deep bg-cream text-charcoal hover:bg-cream-deeper hover:text-ink shadow-sm transition-all focus:outline-none"
+                      >
+                        {copiedId === link.urlId ? (
+                          <Check className="h-4.5 w-4.5 text-green-600" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => handleOpenLink(link.urlId, link.shortUrl)}
+                        title="Open short link"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-beige-deep bg-cream text-charcoal hover:bg-cream-deeper hover:text-ink shadow-sm transition-all focus:outline-none"
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
             ))}

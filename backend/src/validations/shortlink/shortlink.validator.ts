@@ -9,7 +9,7 @@ const createShortLinkValidator = z.object({
 
 const updateShortLinkValidator = z.object({
     params: z.object({
-        shortUrlParam: z.string()
+        urlId: z.string()
             .trim()
     }),
     body: z.object({
