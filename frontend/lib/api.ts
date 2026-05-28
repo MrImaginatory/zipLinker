@@ -1,62 +1,93 @@
 export const API_BASE_URL = "http://localhost:3001/api/v1"
 
-const TOKEN_KEY = "jwt_token"
+export async function clearToken() {
+  if (typeof window === "undefined") return;
+  localStorage.clear();
+  sessionStorage.clear();
 
-export function getToken(): string | null {
-  if (typeof window === "undefined") return null
-  return localStorage.getItem(TOKEN_KEY)
+  // Call backend logout to clear the HttpOnly cookies and Redis session
+  await fetch(`${API_BASE_URL}/users/logout`, {
+    method: "POST",
+    credentials: "include",
+  }).catch(() => null);
 }
 
-export function saveToken(token: string) {
-  localStorage.setItem(TOKEN_KEY, token)
-  // Also set a same-origin cookie so the Next.js middleware (proxy.ts) can read it
-  // for route guarding. The middleware runs at localhost:3000 and can only see
-  // cookies set by localhost:3000, not the backend at localhost:3001.
-  // 2 minutes = 120 seconds, matching JWT_EXPIRES_IN=2m
-  document.cookie = `jwt_token=${token}; path=/; max-age=120; samesite=lax`
-}
+// Track if a refresh is currently happening to avoid multiple calls
+let isRefreshing = false;
+let refreshSubscribers: ((token: boolean) => void)[] = [];
 
-export function clearToken() {
-  localStorage.removeItem(TOKEN_KEY)
-  // Also clear the middleware cookie
-  document.cookie = `jwt_token=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; samesite=lax`
+function onRefreshed(isSuccess: boolean) {
+  refreshSubscribers.forEach(cb => cb(isSuccess));
+  refreshSubscribers = [];
 }
 
 export async function fetchApi(endpoint: string, options: RequestInit = {}) {
-  const url = `${API_BASE_URL}${endpoint}`
-  const token = getToken()
+  const url = `${API_BASE_URL}${endpoint}`;
 
   const defaultOptions: RequestInit = {
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
-    credentials: "include",
+    credentials: "include", // This ensures HttpOnly cookies (authToken, refreshToken) are automatically sent
     ...options,
-  }
+  };
 
-  const response = await fetch(url, defaultOptions)
-  const data = await response.json().catch(() => null)
-
-  if (!response.ok) {
-    if (response.status === 401) {
-      if (typeof window !== "undefined" && window.location.pathname !== "/login") {
-        clearToken()
-        localStorage.clear()
-        sessionStorage.clear()
-
-        // Call backend logout to clear the HttpOnly jwt_token cookie
-        await fetch(`${API_BASE_URL}/users/logout`, {
+  let response = await fetch(url, defaultOptions);
+  
+  // If request failed with 401 and it wasn't the login or refresh endpoints
+  if (response.status === 401 && endpoint !== "/users/login" && endpoint !== "/users/refresh") {
+    // If not already refreshing, initiate refresh
+    if (!isRefreshing) {
+      isRefreshing = true;
+      try {
+        const refreshResponse = await fetch(`${API_BASE_URL}/users/refresh`, {
           method: "POST",
+          headers: { "Content-Type": "application/json" },
           credentials: "include",
-        }).catch(() => null)
+        });
 
-        window.location.href = "/login"
+        if (refreshResponse.ok) {
+          isRefreshing = false;
+          onRefreshed(true);
+        } else {
+          isRefreshing = false;
+          onRefreshed(false);
+          if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+             await clearToken();
+             window.location.href = "/login";
+          }
+          throw new Error("Session expired. Please log in again.");
+        }
+      } catch (err) {
+        isRefreshing = false;
+        onRefreshed(false);
+        if (typeof window !== "undefined" && window.location.pathname !== "/login") {
+             await clearToken();
+             window.location.href = "/login";
+        }
+        throw err;
       }
     }
-    throw new Error(data?.message || "An unexpected error occurred")
+
+    // Wait for the refresh to complete
+    const refreshSuccess = await new Promise<boolean>(resolve => {
+      refreshSubscribers.push(resolve);
+    });
+
+    if (refreshSuccess) {
+      // Retry the original request
+      response = await fetch(url, defaultOptions);
+    } else {
+      throw new Error("Session expired. Please log in again.");
+    }
   }
 
-  return data
+  const data = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(data?.message || "An unexpected error occurred");
+  }
+
+  return data;
 }

@@ -16,7 +16,7 @@ export default function proxy(request: NextRequest) {
   }
 
   // Check if user has a JWT token cookie set by the backend on login
-  const isAuthenticated = request.cookies.has("jwt_token")
+  const isAuthenticated = request.cookies.has("authToken")
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 

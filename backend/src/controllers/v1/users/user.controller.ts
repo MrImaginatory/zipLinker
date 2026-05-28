@@ -109,7 +109,7 @@ const logoutController = async (req: Request, res: Response) => {
 }
 
 const refreshController = async (req: Request, res: Response) => {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken || req.body.refreshToken;
 
     if (!refreshToken) {
         return sendResponse(res, 400, "Refresh Token is required");
