@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import config from "./config/config.js";
 import session from "express-session"
 import cookieParser from "cookie-parser";
@@ -29,6 +31,12 @@ import { RedisStore as RateLimitRedisStore } from "rate-limit-redis";
 const app = express();
 
 app.set('trust proxy', 1)
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static files (HTML, CSS, JS) from the public directory
+app.use("/public", express.static(path.join(__dirname, "../public")));
 
 app.use(requestLogger);
 app.use(cookieParser());

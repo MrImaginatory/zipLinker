@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>404 - Not Found</title>
+    <link rel="stylesheet" href="/public/errors/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body class="is-404">
+    <div class="error-container" data-film-container>
+        <div class="icon-wrapper" data-film-icon style="overflow: hidden;">
+            <img src="https://media1.tenor.com/m/RDhYm12nuQUAAAAC/white-bear.gif" alt="404 GIF">
+        </div>
+        <div class="error-code" data-film-code>404 Error</div>
+        <h1 class="error-title" data-film-title>Page Not Found</h1>
+        <p class="error-message">
+            <span data-film-message="The short link you are looking for does not exist or has been permanently removed."></span><span class="caret" data-film-caret></span>
+        </p>
+        <a href="http://localhost:3000" class="back-btn" data-film-btn>Return Home</a>
+    </div>
+    <script src="/public/errors/animations.js"></script>
+</body>
+</html>

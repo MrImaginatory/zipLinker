@@ -1,5 +1,10 @@
 import ShortLinks from "../../../models/links/link.model.js";
 import ClickLog from "../../../models/links/clickLog.model.js";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 import { Request, Response } from "express";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
@@ -261,13 +266,13 @@ const getRedirectLink = async (req: Request, res: Response) => {
         })
 
         if (!shortLink) {
-            sendResponse(res, 404, "Short Link Not Found");
-            return
+            res.status(404).sendFile(path.join(__dirname, "../../../../public/errors/404.html"));
+            return;
         }
 
         if (!shortLink.isActive) {
-            sendResponse(res, 400, "Short Link Is Not Active");
-            return
+            res.status(423).sendFile(path.join(__dirname, "../../../../public/errors/423.html"));
+            return;
         }
 
         shortLink.clicks++;
@@ -279,7 +284,7 @@ const getRedirectLink = async (req: Request, res: Response) => {
         res.redirect(shortLink.longUrl);
     } catch (error) {
         logger.error(`[${req.method} ${req.originalUrl}] Error in getRedirectLink : ${error}`);
-        sendResponse(res, 500, "Internal Server Error");
+        res.status(500).sendFile(path.join(__dirname, "../../../../public/errors/500.html"));
         return;
 
     }

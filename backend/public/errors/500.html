@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>500 - Server Error</title>
+    <link rel="stylesheet" href="/public/errors/styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+</head>
+<body class="is-500">
+    <div class="error-container" data-film-container>
+        <div class="icon-wrapper" data-film-icon style="overflow: hidden;">
+            <img src="https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExN2E4ZXJ1a3IyZng0OGl2NWhheGt6MDBsenJwd2RxNmRzY2V2aDVkMCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/FIsLTb1hvTP1vwgReE/giphy.gif" alt="500 GIF">
+        </div>
+        <div class="error-code" data-film-code>500 Error</div>
+        <h1 class="error-title" data-film-title>Internal Server Error</h1>
+        <p class="error-message">
+            <span data-film-message="Our server encountered an unexpected issue while trying to resolve this link. Please try again later."></span><span class="caret" data-film-caret></span>
+        </p>
+        <a href="http://localhost:3000" class="back-btn" data-film-btn>Return Home</a>
+    </div>
+    <script src="/public/errors/animations.js"></script>
+</body>
+</html>
