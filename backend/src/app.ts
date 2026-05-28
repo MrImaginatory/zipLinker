@@ -6,7 +6,7 @@ import config from "./config/config.js";
 import session from "express-session"
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
-import type { Request, Response } from "express";
+import type { Request, Response, NextFunction } from "express";
 import redisClient from "./database/redis.js";
 
 import { sequelize } from "./database/database.js";
@@ -81,14 +81,10 @@ const limiter = rateLimit({
         // ioredis call signature compatibility
         sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
     }),
-    message: {
-        success: false,
-        message: "Too many Requests please try again later",
-        statusCode: 429,
-        data: null
-    },
-    statusCode: 429
-})
+    handler: (_req: Request, res: Response, _next: NextFunction, options) => {
+        res.status(options.statusCode).sendFile(path.join(__dirname, "../public/errors/429.html"));
+    }
+});
 
 app.use(cors(
     {
@@ -125,6 +121,11 @@ app.use("/api/v1/shortlinks", shortLinkRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 
 app.get("/:shortCode", getRedirectLink);
+
+// Catch-all route for undefined endpoints (404)
+app.use((_req: Request, res: Response) => {
+    res.status(404).sendFile(path.join(__dirname, "../public/errors/404.html"));
+});
 
 app.use(errorHandler);
 

@@ -30,6 +30,11 @@
     border-color: rgba(234, 179, 8, 0.2);
   }
 
+  .is-429 .icon-wrapper {
+    background: rgba(249, 115, 22, 0.1);
+    border-color: rgba(249, 115, 22, 0.2);
+  }
+
   .is-500 .icon-wrapper {
     background: rgba(239, 68, 68, 0.1);
     border-color: rgba(239, 68, 68, 0.2);
@@ -72,8 +77,8 @@ body {
 }
 
 .icon-wrapper {
-  width: 140px;
-  height: 140px;
+  /* width: 140px;
+  height: 140px; */
   /* border-radius: 50%; */
   display: flex;
   justify-content: center;
@@ -140,14 +145,15 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  background: var(--primary);
-  color: white;
+  background: var(--card);
+  color: var(--primary);
   text-decoration: none;
   padding: 0.75rem 1.5rem;
   border-radius: 8px;
   font-weight: 500;
   font-size: 0.875rem;
   transition: opacity 0.2s;
+  border: 1px solid var(--border)
 }
 
 .back-btn:hover {
@@ -162,6 +168,11 @@ body {
 .is-423 .icon-wrapper {
   background: #fefce8;
   border-color: #fef08a;
+}
+
+.is-429 .icon-wrapper {
+  background: #fff7ed;
+  border-color: #fed7aa;
 }
 
 .is-404 .icon-wrapper svg {
