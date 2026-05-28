@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Calendar, LogOut, Mail, Shield, User } from "lucide-react"
-import { fetchApi } from "@/lib/api"
+import { fetchApi, clearToken } from "@/lib/api"
 
 interface UserProfile {
   userName: string
@@ -41,9 +41,9 @@ export default function ProfilePage() {
     try {
       await fetchApi("/users/logout", { method: "POST" }).catch(() => null)
     } finally {
+      clearToken()
       localStorage.clear()
       sessionStorage.clear()
-      document.cookie = "connect.sid=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT"
       router.push("/")
     }
   }

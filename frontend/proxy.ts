@@ -9,14 +9,14 @@ const publicPathPrefixes = ["/_next", "/favicon.ico", "/images", "/api"]
 
 export default function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
-  
+
   // Skip middleware for static files and api routes
   if (publicPathPrefixes.some(prefix => pathname.startsWith(prefix))) {
     return NextResponse.next()
   }
 
-  // Check if user has an auth token (this is a simple check for the prototype)
-  const isAuthenticated = request.cookies.has("connect.sid")
+  // Check if user has a JWT token cookie set by the backend on login
+  const isAuthenticated = request.cookies.has("jwt_token")
 
   const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route))
 

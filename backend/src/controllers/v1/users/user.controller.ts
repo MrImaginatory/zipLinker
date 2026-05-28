@@ -4,6 +4,7 @@ import bcrypt from "bcrypt";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
 import { signToken } from "../../../utils/jwt.util.js";
+import config from "../../../config/config.js";
 
 const signupController = async (req: Request, res: Response) => {
     const { email, userName, password } = req.body;
@@ -44,16 +45,8 @@ const loginController = async (req: Request, res: Response) => {
         if (!isPasswordValid) {
             return sendResponse(res, 401, "Invalid Credentials");
         }
-        req.session.userId = user.userId;
+
         const token = signToken(user.userId);
-
-        res.cookie('jwt_token', token, {
-            httpOnly: true,
-            secure: true,
-            maxAge: 60 * 60 * 1000
-        });
-
-        res.setHeader("Authorization", `Bearer ${token}`);
 
         return sendResponse(res, 200, "User Logged In Successfully", { token });
     } catch (error) {
@@ -62,24 +55,14 @@ const loginController = async (req: Request, res: Response) => {
     }
 }
 
-const logoutController = async (req: Request, res: Response) => {
+const logoutController = async (_req: Request, res: Response) => {
     try {
-        req.session.destroy((err) => {
-            if (err) {
-                logger.error(`Error destroying session: ${err}`);
-                sendResponse(res, 500, "Internal Server Error");
-                return;
-            }
-            res.clearCookie("connect.sid");
-            res.setHeader("Authorization", "");
-            res.clearCookie('jwt_token');
-            sendResponse(res, 200, "User Logged Out Successfully");
-            return;
-        });
+        res.clearCookie("connect.sid");
+        res.clearCookie('jwt_token');
+        sendResponse(res, 200, "User Logged Out Successfully");
     } catch (error) {
-        logger.error(`[${req.method} ${req.originalUrl}] Error in logoutController : ${error}`);
+        logger.error(`Error in logoutController : ${error}`);
         sendResponse(res, 500, "Internal Server Error");
-        return;
     }
 }
 

@@ -6,7 +6,7 @@ import { FormField } from "@/components/auth/form-field"
 import { PasswordInput } from "@/components/auth/password-input"
 import { SubmitButton } from "@/components/auth/submit-button"
 
-import { fetchApi } from "@/lib/api"
+import { fetchApi, saveToken } from "@/lib/api"
 
 export default function LoginPage() {
   const [loading, setLoading] = useState(false)
@@ -46,11 +46,16 @@ export default function LoginPage() {
     setServerError("")
     
     try {
-      await fetchApi("/users/login", {
+      const res = await fetchApi("/users/login", {
         method: "POST",
         body: JSON.stringify(form)
       })
-      
+
+      // Save JWT token to localStorage for use in API requests
+      if (res?.data?.token) {
+        saveToken(res.data.token)
+      }
+
       // Redirect to dashboard (hard refresh so middleware kicks in)
       window.location.href = "/dashboard"
     } catch (err: any) {
