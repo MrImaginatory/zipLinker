@@ -33,6 +33,7 @@
     "@sequelize/core": "7.0.0-alpha.48",
     "@sequelize/postgres": "7.0.0-alpha.48",
     "bcrypt": "^6.0.0",
+    "connect-redis": "^9.0.0",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
@@ -45,6 +46,7 @@
     "nanoid": "^5.1.11",
     "pg": "^8.20.0",
     "pg-hstore": "^2.3.4",
+    "rate-limit-redis": "^5.0.0",
     "uuid": "^14.0.0",
     "winston": "^3.19.0",
     "zod": "^4.4.3"

@@ -5,7 +5,7 @@ import session from "express-session"
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import type { Request, Response } from "express";
-import "./database/redis.js";
+import redisClient from "./database/redis.js";
 
 import { sequelize } from "./database/database.js";
 import connectDB from "./database/database.js";
@@ -23,6 +23,9 @@ import { getRedirectLink } from "./controllers/v1/shortlinks/shortlink.controlle
 import sendResponse from "./utils/responseHandler.util.js";
 import { errorHandler } from "./middlewares/v1/error.middleware.js";
 
+import { RedisStore } from "connect-redis";
+import { RedisStore as RateLimitRedisStore } from "rate-limit-redis";
+
 const app = express();
 
 app.set('trust proxy', true)
@@ -30,11 +33,30 @@ app.set('trust proxy', true)
 app.use(requestLogger);
 app.use(cookieParser());
 
+// Initialize Redis session store
+app.use(session({
+    store: new RedisStore({
+        client: redisClient,
+        prefix: "auth:session:"
+    }),
+    secret: config.SESSION.SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+        secure: config.NODE_ENV === "production",
+        httpOnly: true,
+        maxAge: 1000 * 60 * 60 * 24 * 7 // 7 days (aligning with refresh token duration)
+    }
+}));
+
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000,
     max: 100,
     standardHeaders: true,
     legacyHeaders: false,
+    store: new RateLimitRedisStore({
+        sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
+    }),
     message: {
         success: false,
         message: "Too many requests, please try again later",
