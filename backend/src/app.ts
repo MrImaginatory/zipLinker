@@ -25,9 +25,10 @@ import { errorHandler } from "./middlewares/v1/error.middleware.js";
 
 const app = express();
 
+app.set('trust proxy', true)
+
 app.use(requestLogger);
 app.use(cookieParser());
-
 
 const limiter = rateLimit({
     windowMs: 1 * 60 * 1000,
