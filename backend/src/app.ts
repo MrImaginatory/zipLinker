@@ -86,7 +86,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/shortlinks", shortLinkRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 
-app.use("/:shortCode", getRedirectLink);
+app.get("/:shortCode", getRedirectLink);
 
 app.use(errorHandler);
 

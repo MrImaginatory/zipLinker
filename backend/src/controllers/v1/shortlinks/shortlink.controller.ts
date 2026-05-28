@@ -95,6 +95,42 @@ const updateLinks = async (req: Request, res: Response) => {
 
 }
 
+const activateDeactivateLink = async (req: Request, res: Response) => {
+    try {
+        const { urlId } = req.params;
+        const { isActive } = req.body;
+
+        console.log("HERE IS THE URL ID", urlId);
+
+        const urlExists = await ShortLinks.findByPk(urlId);
+        if (!urlExists) {
+            sendResponse(res, 404, "Url Not Found");
+            return;
+        }
+
+        if (urlExists.userId !== req.userId) {
+            sendResponse(res, 403, "You are not authorized to update this url");
+            return;
+        }
+
+        await ShortLinks.update({
+            isActive
+        }, {
+            where: {
+                urlId
+            }
+        })
+
+        sendResponse(res, 200, isActive ? "Url Activated Successfully" : "Url Deactivated Successfully", isActive);
+        return;
+    }
+    catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in activateDeactivateLink : ${error}`);
+        sendResponse(res, 500, "Internal Server Error");
+        return;
+    }
+}
+
 const getShortLinks = async (req: Request, res: Response) => {
     try {
 
@@ -245,4 +281,4 @@ const getRedirectLink = async (req: Request, res: Response) => {
     }
 }
 
-export { createShortLink, updateLinks, getShortLinks, getLinkDetails, getRedirectLink, getShortLinkCount }
+export { createShortLink, updateLinks, activateDeactivateLink, getShortLinks, getLinkDetails, getRedirectLink, getShortLinkCount }
