@@ -45,6 +45,14 @@ const config = {
         TIMEZONE: getEnv("TIMEZONE", true),
 
     },
+
+    REDIS: {
+        HOST: getEnv("REDIS_HOST", true),
+        PORT: getEnv("REDIS_PORT", true),
+        PASSWORD: getEnv("REDIS_PASSWORD", false),
+        URL: getEnv("REDIS_URL", false)
+    },
+
     ALLOWED_ORIGINS: getEnv("ALLOWED_ORIGINS", true).split(","),
 
     WEBSITE_URL: getEnv("WEBSITE_URL", true),

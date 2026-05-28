@@ -37,10 +37,10 @@ const sequelize = new Sequelize({
 const connectDB = async () => {
     try {
         await sequelize.authenticate();
-        logger.log("Database connection established successfully");
+        logger.log("🛢️ Database connection established successfully");
     }
     catch (error) {
-        logger.error(`Database connection failed: ${error}`);
+        logger.error(`🛢️ 💥 Database connection failed: ${error}`);
     }
 }
 

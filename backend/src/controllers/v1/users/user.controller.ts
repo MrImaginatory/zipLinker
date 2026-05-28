@@ -4,7 +4,7 @@ import bcrypt from "bcrypt";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
 import { signToken } from "../../../utils/jwt.util.js";
-import config from "../../../config/config.js";
+
 
 const signupController = async (req: Request, res: Response) => {
     const { email, userName, password } = req.body;

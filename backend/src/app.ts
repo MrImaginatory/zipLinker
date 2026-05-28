@@ -5,6 +5,7 @@ import session from "express-session"
 import cookieParser from "cookie-parser";
 import rateLimit from "express-rate-limit";
 import type { Request, Response } from "express";
+import "./database/redis.js";
 
 import { sequelize } from "./database/database.js";
 import connectDB from "./database/database.js";
@@ -97,9 +98,9 @@ const connectDataBase = async () => {
             force: Boolean(config.DB.FORCE_DROP_TABLE === "true"),
             alter: Boolean(config.DB.FORCE_ALTER_TABLE === "true")
         });
-        logger.log("✅ Database synced successfully");
+        logger.log("🛢️ ♻️  Database synced successfully");
     } catch (error) {
-        logger.error(`❌ Error in connecting to database: ${error}`);
+        logger.error(`♻️ 💥Error in connecting to database: ${error}`);
         process.exit(1);
     }
 }
@@ -107,10 +108,10 @@ const connectDataBase = async () => {
 const startServer = async () => {
     try {
         app.listen(config.PORT, () => {
-            logger.log(`✅ Server is running on port ${config.PORT}`);
+            logger.log(`🖧 ✅ Server is running on port ${config.PORT}`);
         })
     } catch (error) {
-        logger.error(`❌ Error in starting server: ${error}`);
+        logger.error(`🖧 ❌ Error in starting server: ${error}`);
         process.exit(1);
     }
 }
