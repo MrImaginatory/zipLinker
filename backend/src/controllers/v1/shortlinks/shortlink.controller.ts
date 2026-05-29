@@ -1,10 +1,6 @@
 import ShortLinks from "../../../models/links/link.model.js";
 import ClickLog from "../../../models/links/clickLog.model.js";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+import { sendErrorPage } from "../../../utils/errorPage.util.js";
 import { Request, Response } from "express";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
@@ -266,12 +262,12 @@ const getRedirectLink = async (req: Request, res: Response) => {
         })
 
         if (!shortLink) {
-            res.status(404).sendFile(path.join(__dirname, "../../../../public/errors/404.html"));
+            await sendErrorPage(res, 404, "404.html");
             return;
         }
 
         if (!shortLink.isActive) {
-            res.status(423).sendFile(path.join(__dirname, "../../../../public/errors/423.html"));
+            await sendErrorPage(res, 423, "423.html");
             return;
         }
 
@@ -284,7 +280,7 @@ const getRedirectLink = async (req: Request, res: Response) => {
         res.redirect(shortLink.longUrl);
     } catch (error) {
         logger.error(`[${req.method} ${req.originalUrl}] Error in getRedirectLink : ${error}`);
-        res.status(500).sendFile(path.join(__dirname, "../../../../public/errors/500.html"));
+        await sendErrorPage(res, 500, "500.html");
         return;
 
     }

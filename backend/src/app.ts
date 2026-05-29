@@ -24,6 +24,7 @@ import { getRedirectLink } from "./controllers/v1/shortlinks/shortlink.controlle
 
 import sendResponse from "./utils/responseHandler.util.js";
 import { errorHandler } from "./middlewares/v1/error.middleware.js";
+import { sendErrorPage } from "./utils/errorPage.util.js";
 
 import { RedisStore } from "connect-redis";
 import { RedisStore as RateLimitRedisStore } from "rate-limit-redis";
@@ -81,8 +82,8 @@ const limiter = rateLimit({
         // ioredis call signature compatibility
         sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any,
     }),
-    handler: (_req: Request, res: Response, _next: NextFunction, options) => {
-        res.status(options.statusCode).sendFile(path.join(__dirname, "../public/errors/429.html"));
+    handler: async (_req: Request, res: Response, _next: NextFunction, options) => {
+        await sendErrorPage(res, options.statusCode, "429.html");
     }
 });
 
@@ -123,8 +124,8 @@ app.use("/api/v1/dashboard", dashboardRouter);
 app.get("/:shortCode", getRedirectLink);
 
 // Catch-all route for undefined endpoints (404)
-app.use((_req: Request, res: Response) => {
-    res.status(404).sendFile(path.join(__dirname, "../public/errors/404.html"));
+app.use(async (_req: Request, res: Response) => {
+    await sendErrorPage(res, 404, "404.html");
 });
 
 app.use(errorHandler);
