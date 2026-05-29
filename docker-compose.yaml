@@ -1,0 +1,9 @@
+services:
+ redis:
+  image: redis:trixie
+  container_name: podman_redis
+  restart: always
+  ports:
+   - "6379:6379"
+  volumes:
+   - ./redis-data:/data
