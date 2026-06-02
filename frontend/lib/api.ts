@@ -1,4 +1,6 @@
-export const API_BASE_URL = "http://localhost:3001/api/v1"
+import { toast } from "sonner"
+
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001/api/v1"
 
 export async function clearToken() {
   if (typeof window === "undefined") return;
@@ -33,7 +35,38 @@ export async function fetchApi(endpoint: string, options: RequestInit = {}) {
     ...options,
   };
 
-  let response = await fetch(url, defaultOptions);
+  let response: Response | undefined;
+  let retries = 3;
+  let networkError = null;
+
+  while (retries > 0) {
+    try {
+      response = await fetch(url, defaultOptions);
+      networkError = null;
+      break; // Success, exit retry loop
+    } catch (err) {
+      networkError = err;
+      retries--;
+      if (retries > 0) {
+        // Wait 1 second before retrying
+        await new Promise(resolve => setTimeout(resolve, 1000));
+      }
+    }
+  }
+
+  if (networkError || !response) {
+    if (typeof window !== "undefined") {
+      toast.error("Unable to contact Server try later");
+      if (window.location.pathname !== "/login") {
+         await clearToken();
+         setTimeout(() => {
+             window.location.href = "/login";
+         }, 1500);
+      }
+    }
+    throw new Error("Unable to contact Server try later");
+  }
+
   
   // If request failed with 401 and it wasn't the login or refresh endpoints
   if (response.status === 401 && endpoint !== "/users/login" && endpoint !== "/users/refresh") {

@@ -4,8 +4,7 @@ import { useState, useEffect } from "react"
 import { Copy, ExternalLink, Link2, AlertCircle, Check, Edit2, X, QrCode, Download } from "lucide-react"
 import { fetchApi } from "@/lib/api"
 import { toast } from "sonner"
-import QRCode from "react-qr-code"
-import html2canvas from "html2canvas"
+import { ReactQRCode } from "@lglab/react-qr-code"
 
 interface ShortLink {
   urlId: string
@@ -31,6 +30,25 @@ export default function LinksPage() {
 
   // QR modal state
   const [qrModalUrl, setQrModalUrl] = useState<string | null>(null)
+  const [qrTheme, setQrTheme] = useState<'classic' | 'circular' | 'leafy'>('circular')
+
+  const qrThemes = {
+    classic: {
+      dataModulesSettings: { style: 'square' as const },
+      finderPatternInnerSettings: { style: 'square' as const },
+      finderPatternOuterSettings: { style: 'square' as const }
+    },
+    circular: {
+      dataModulesSettings: { style: 'circle' as const },
+      finderPatternInnerSettings: { style: 'circle' as const },
+      finderPatternOuterSettings: { style: 'rounded' as const }
+    },
+    leafy: {
+      dataModulesSettings: { style: 'leaf' as const },
+      finderPatternInnerSettings: { style: 'leaf-lg' as const },
+      finderPatternOuterSettings: { style: 'leaf-lg' as const }
+    }
+  }
 
   // Fetch all links on component mount
   useEffect(() => {
@@ -161,18 +179,80 @@ export default function LinksPage() {
   }
 
   async function downloadQR(format: 'png' | 'jpeg') {
-    const qrElement = document.getElementById("qr-code-wrapper")
-    if (!qrElement) return
+    if (!qrModalUrl) return;
+
     try {
-      const canvas = await html2canvas(qrElement, { backgroundColor: '#ffffff' })
-      const url = canvas.toDataURL(`image/${format}`, 1.0)
-      const a = document.createElement("a")
-      a.href = url
-      a.download = `qrcode.${format}`
-      a.click()
+      const svgElement = document.querySelector("#qr-code-wrapper svg");
+      if (!svgElement) throw new Error("SVG element not found");
+
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) throw new Error("Could not get canvas context");
+
+      // Set dimensions
+      const qrSize = 250;
+      const paddingX = 40;
+      const paddingTop = 40;
+      const paddingBottom = 60;
+      canvas.width = qrSize + (paddingX * 2);
+      canvas.height = qrSize + paddingTop + paddingBottom;
+
+      // Draw background (white)
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Serialize SVG
+      const xmlSerializer = new XMLSerializer();
+      const svgString = xmlSerializer.serializeToString(svgElement);
+      const svgBlob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+      const DOMURL = window.URL || window.webkitURL || window;
+      const svgUrl = DOMURL.createObjectURL(svgBlob);
+
+      // Load SVG to Image
+      const img = new Image();
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+        img.src = svgUrl;
+      });
+
+      // Draw QR Code
+      ctx.drawImage(img, paddingX, paddingTop, qrSize, qrSize);
+      DOMURL.revokeObjectURL(svgUrl);
+
+      // Explicitly load and draw the logo over the center (because canvas blocks SVG external images)
+      const logoUrl = process.env.NEXT_PUBLIC_LOGO_PATH || '/ZipLinkerLogo.svg';
+      const logoImg = new Image();
+      await new Promise((resolve) => {
+        logoImg.onload = resolve;
+        logoImg.onerror = resolve; // fallback to continue without crashing
+        logoImg.src = logoUrl;
+      });
+      
+      const scaleFactor = qrSize / 200; // 250 / 200 = 1.25
+      const logoWidth = 48 * scaleFactor;
+      const logoHeight = 48 * scaleFactor;
+      const logoX = paddingX + (qrSize - logoWidth) / 2;
+      const logoY = paddingTop + (qrSize - logoHeight) / 2;
+      ctx.drawImage(logoImg, logoX, logoY, logoWidth, logoHeight);
+      DOMURL.revokeObjectURL(svgUrl);
+
+      // Draw URL text below
+      ctx.font = "14px monospace";
+      ctx.fillStyle = "#666666"; // steel color
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(qrModalUrl, canvas.width / 2, paddingTop + qrSize + 30);
+
+      // Download
+      const dataUrl = canvas.toDataURL(`image/${format}`, 1.0);
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = `qrcode.${format}`;
+      a.click();
     } catch (err) {
-      console.error("Failed to download QR code", err)
-      toast.error("Failed to download QR code")
+      console.error("Failed to download QR code", err);
+      toast.error("Failed to download QR code");
     }
   }
 
@@ -418,13 +498,45 @@ export default function LinksPage() {
                 <X className="h-5 w-5" />
               </button>
             </div>
-            <div className="p-8 flex flex-col items-center justify-center bg-cream-soft">
+            <div className="p-6 flex flex-col items-center justify-center bg-cream-soft">
               <div id="qr-code-wrapper" className="bg-white p-4 rounded-xl border border-beige-deep shadow-sm">
-                <QRCode value={qrModalUrl} size={200} level="H" />
+                <ReactQRCode
+                  value={qrModalUrl}
+                  size={200}
+                  level="H"
+                  marginSize={2}
+                  imageSettings={{
+                    src: process.env.NEXT_PUBLIC_LOGO_PATH || '/ZipLinkerLogo.svg',
+                    width: 48,
+                    height: 48,
+                    excavate: true,
+                    opacity: 1,
+                  }}
+                  dataModulesSettings={{ ...qrThemes[qrTheme].dataModulesSettings, color: "#1a1a1a" }}
+                  finderPatternInnerSettings={{ ...qrThemes[qrTheme].finderPatternInnerSettings, color: "#ff6200" }}
+                  finderPatternOuterSettings={{ ...qrThemes[qrTheme].finderPatternOuterSettings, color: "#1a1a1a" }}
+                />
               </div>
-              <p className="mt-4 text-xs font-mono text-steel break-all text-center">
+              <p className="mt-4 mb-4 text-xs font-mono text-steel break-all text-center">
                 {qrModalUrl}
               </p>
+              
+              {/* Theme Selector */}
+              <div className="flex gap-2 w-full justify-center">
+                {(['classic', 'circular', 'leafy'] as const).map(theme => (
+                  <button
+                    key={theme}
+                    onClick={() => setQrTheme(theme)}
+                    className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
+                      qrTheme === theme 
+                        ? 'bg-primary text-white shadow-sm' 
+                        : 'bg-cream text-charcoal border border-beige-deep hover:bg-cream-deeper'
+                    }`}
+                  >
+                    {theme}
+                  </button>
+                ))}
+              </div>
             </div>
             <div className="p-4 border-t border-border bg-card flex items-center justify-center gap-3">
               <button
