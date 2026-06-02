@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Redirecting...</title>
+    <!-- Inter Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --colors-primary: #ff6200;
+            --colors-primary-deep: #e65800;
+            --colors-sunshine-700: #ff8c00;
+            --colors-sunshine-500: #ffb300;
+            --colors-yellow-saturated: #ffdc00;
+            --colors-cream: #fdfbf7;
+            --colors-beige-deep: #e8e4db;
+            --colors-canvas: #ffffff;
+            --colors-ink: #1a1a1a;
+            --colors-steel: #666666;
+            --colors-hairline-soft: #eaeaea;
+            --colors-muted: #999999;
+
+            --typography-heading-3: 500 28px/1.25 'Inter', sans-serif;
+            --typography-body-md: 400 16px/1.55 'Inter', sans-serif;
+            --typography-button-md: 500 14px/1.30 'Inter', sans-serif;
+
+            --spacing-md: 16px;
+            --spacing-xl: 24px;
+            --spacing-xxl: 32px;
+
+            --rounded-md: 8px;
+            --rounded-lg: 12px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--colors-canvas);
+            color: var(--colors-ink);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: var(--spacing-xxl);
+        }
+
+        .card-cream {
+            background-color: var(--colors-cream);
+            color: var(--colors-ink);
+            border-radius: var(--rounded-lg);
+            padding: var(--spacing-xxl);
+            border: 1px solid var(--colors-beige-deep);
+            max-width: 520px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.04);
+        }
+
+        .card-title {
+            font: var(--typography-heading-3);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .card-text {
+            font: var(--typography-body-md);
+            color: var(--colors-steel);
+            margin-bottom: var(--spacing-xxl);
+        }
+
+        /* Pulse Animation for Countdown */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.3); opacity: 0.8; color: var(--colors-primary); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        #countdown {
+            display: inline-block;
+            font-weight: 600;
+            font-size: 1.2em;
+        }
+        
+        #countdown.animate {
+            animation: pulse 1s infinite;
+        }
+
+        .button-primary {
+            display: inline-block;
+            background-color: var(--colors-primary);
+            color: white;
+            font: var(--typography-button-md);
+            padding: 10px 20px;
+            border-radius: var(--rounded-md);
+            text-decoration: none;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .button-primary:hover:not(:disabled) {
+            background-color: var(--colors-primary-deep);
+        }
+
+        .button-primary:active:not(:disabled) {
+            background-color: var(--colors-primary-deep);
+            transform: scale(0.98);
+        }
+
+        .button-primary:disabled {
+            background-color: var(--colors-hairline-soft);
+            color: var(--colors-muted);
+            cursor: not-allowed;
+            border: 1px solid var(--colors-beige-deep);
+        }
+
+        .footer-band {
+            padding: var(--spacing-xxl) 0;
+            background: linear-gradient(90deg, 
+                var(--colors-primary) 0%, 
+                var(--colors-sunshine-700) 25%, 
+                var(--colors-sunshine-500) 50%, 
+                var(--colors-yellow-saturated) 75%, 
+                var(--colors-cream) 100%);
+        }
+
+    </style>
+</head>
+<body>
+
+    <main class="main-content">
+        <div class="card-cream">
+            <h1 class="card-title">You're leaving our site</h1>
+            <p class="card-text">
+                Redirecting you to the destination in <span id="countdown" class="animate">{{COUNTDOWN}}</span> seconds...
+            </p>
+            <button class="button-primary" id="open-link-btn" disabled>Wait for it...</button>
+        </div>
+    </main>
+
+    <div class="footer-band"></div>
+
+    <script>
+        (function() {
+            let countdown = parseInt("{{COUNTDOWN}}", 10) || 5;
+            const shortCode = "{{SHORT_CODE}}";
+            
+            const countdownEl = document.getElementById("countdown");
+            const btn = document.getElementById("open-link-btn");
+
+            if(isNaN(countdown)) {
+                countdown = 5;
+            }
+
+            const interval = setInterval(() => {
+                countdown--;
+                if(countdown > 0) {
+                    countdownEl.innerText = countdown;
+                } else {
+                    clearInterval(interval);
+                    countdownEl.innerText = "0";
+                    countdownEl.classList.remove("animate");
+                    btn.disabled = false;
+                    btn.innerText = "Open Link Now";
+                }
+            }, 1000);
+
+            btn.addEventListener("click", () => {
+                btn.disabled = true;
+                btn.innerText = "Loading...";
+
+                fetch(`/api/v1/redirect/${shortCode}`)
+                    .then(res => res.json())
+                    .then(json => {
+                        if (json.success && json.data && json.data.longUrl) {
+                            window.location.href = json.data.longUrl;
+                        } else {
+                            btn.disabled = false;
+                            btn.innerText = "Try Again";
+                            alert("Error: " + (json.message || "Failed to fetch original URL"));
+                        }
+                    })
+                    .catch(err => {
+                        btn.disabled = false;
+                        btn.innerText = "Try Again";
+                        alert("Error fetching original URL.");
+                    });
+            });
+        })();
+    </script>
+</body>
+</html>

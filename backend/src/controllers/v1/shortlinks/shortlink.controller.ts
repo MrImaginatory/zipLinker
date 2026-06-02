@@ -6,6 +6,12 @@ import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
 import { generateNanoId } from "../../../utils/shortLink.util.js"
 import config from "../../../config/config.js";
+import fs from "fs/promises";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const createShortLink = async (req: Request, res: Response) => {
     const { longUrl, isActive } = req.body
@@ -271,19 +277,60 @@ const getRedirectLink = async (req: Request, res: Response) => {
             return;
         }
 
+        const redirectHtmlPath = path.join(__dirname, "../../../../public/redirect.html");
+        try {
+            let htmlContent = await fs.readFile(redirectHtmlPath, "utf-8");
+            
+            // Replace placeholders
+            const countdown = config.REDIRECT?.COUNTDOWN || 5;
+            htmlContent = htmlContent.replace(/{{SHORT_CODE}}/g, shortLink.shortCode);
+            htmlContent = htmlContent.replace(/{{COUNTDOWN}}/g, countdown.toString());
+            
+            res.setHeader("Content-Type", "text/html");
+            res.send(htmlContent);
+        } catch (readError) {
+            logger.error(`Error reading redirect.html: ${readError}`);
+            res.redirect(shortLink.longUrl);
+        }
+    } catch (error) {
+        logger.error(`[${req.method} ${req.originalUrl}] Error in getRedirectLink : ${error}`);
+        await sendErrorPage(res, 500, "500.html");
+        return;
+    }
+}
+
+const getOriginalUrl = async (req: Request, res: Response) => {
+    const { shortCode } = req.params;
+
+    try {
+        const shortLink = await ShortLinks.findOne({
+            where: {
+                shortCode
+            }
+        })
+
+        if (!shortLink) {
+            sendResponse(res, 404, "Short Link Not Found");
+            return;
+        }
+
+        if (!shortLink.isActive) {
+            sendResponse(res, 423, "Short Link is deactivated");
+            return;
+        }
+
         shortLink.clicks++;
         await shortLink.save();
 
         // Log the click event for trend analysis
         await ClickLog.create({ urlId: shortLink.urlId });
 
-        res.redirect(shortLink.longUrl);
+        sendResponse(res, 200, "Url Fetched Successfully", { longUrl: shortLink.longUrl });
     } catch (error) {
-        logger.error(`[${req.method} ${req.originalUrl}] Error in getRedirectLink : ${error}`);
-        await sendErrorPage(res, 500, "500.html");
+        logger.error(`[${req.method} ${req.originalUrl}] Error in getOriginalUrl : ${error}`);
+        sendResponse(res, 500, "Internal Server Error");
         return;
-
     }
 }
 
-export { createShortLink, updateLinks, activateDeactivateLink, getShortLinks, getLinkDetails, getRedirectLink, getShortLinkCount }
+export { createShortLink, updateLinks, activateDeactivateLink, getShortLinks, getLinkDetails, getRedirectLink, getShortLinkCount, getOriginalUrl }

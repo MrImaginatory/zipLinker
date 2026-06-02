@@ -20,7 +20,7 @@ import userRouter from "./routes/v1/users/user.route.js"
 import shortLinkRouter from "./routes/v1/shortLinks/shortLink.route.js"
 import dashboardRouter from "./routes/v1/dashboard/dashboard.route.js"
 
-import { getRedirectLink } from "./controllers/v1/shortlinks/shortlink.controller.js";
+import { getRedirectLink, getOriginalUrl } from "./controllers/v1/shortlinks/shortlink.controller.js";
 
 import sendResponse from "./utils/responseHandler.util.js";
 import { errorHandler } from "./middlewares/v1/error.middleware.js";
@@ -121,6 +121,7 @@ app.use("/api/v1/users", userRouter);
 app.use("/api/v1/shortlinks", shortLinkRouter);
 app.use("/api/v1/dashboard", dashboardRouter);
 
+app.get("/api/v1/redirect/:shortCode", getOriginalUrl);
 app.get("/:shortCode", getRedirectLink);
 
 // Catch-all route for undefined endpoints (404)

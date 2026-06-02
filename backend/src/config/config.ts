@@ -73,6 +73,10 @@ const config = {
         SECRET: getEnv("JWT_SECRET", true),
         EXPIRES_IN: getEnv("JWT_EXPIRES_IN", true),
         REFRESH_EXPIRES_IN: getEnv("JWT_REFRESH_EXPIRES_IN", false) || "7d"
+    },
+    
+    REDIRECT: {
+        COUNTDOWN: parseInt(getEnv("REDIRECT_COUNTDOWN", false) || "5", 10)
     }
 }
 
