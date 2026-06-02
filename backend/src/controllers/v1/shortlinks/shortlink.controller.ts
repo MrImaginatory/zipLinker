@@ -1,17 +1,10 @@
 import ShortLinks from "../../../models/links/link.model.js";
 import ClickLog from "../../../models/links/clickLog.model.js";
-import { sendErrorPage } from "../../../utils/errorPage.util.js";
 import { Request, Response } from "express";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
 import { generateNanoId } from "../../../utils/shortLink.util.js"
 import config from "../../../config/config.js";
-import fs from "fs/promises";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const createShortLink = async (req: Request, res: Response) => {
     const { longUrl, isActive } = req.body
@@ -46,7 +39,7 @@ const createShortLink = async (req: Request, res: Response) => {
             userId
         })
 
-        const shortUrl = config.BASE_URL + "/" + createShortUrl.shortCode;
+        const shortUrl = config.WEBSITE_URL + "/" + createShortUrl.shortCode;
         const longUrlLink = createShortUrl.longUrl;
 
         const respData = {
@@ -160,7 +153,7 @@ const getShortLinks = async (req: Request, res: Response) => {
         }
 
         const respData = shortLinks.map((shortLink: ShortLinks) => {
-            const shortUrl = config.BASE_URL + "/" + shortLink.shortCode;
+            const shortUrl = config.WEBSITE_URL + "/" + shortLink.shortCode;
 
             return {
                 urlId: shortLink.urlId,
@@ -202,7 +195,7 @@ const getLinkDetails = async (req: Request, res: Response) => {
             return
         }
 
-        const shortUrl = config.BASE_URL + "/" + shortLink.shortCode;
+        const shortUrl = config.WEBSITE_URL + "/" + shortLink.shortCode;
 
         const respData = {
             longUrlLink: shortLink.longUrl,
@@ -257,48 +250,6 @@ const getShortLinkCount = async (req: Request, res: Response) => {
     }
 }
 
-const getRedirectLink = async (req: Request, res: Response) => {
-    const { shortCode } = req.params;
-
-    try {
-        const shortLink = await ShortLinks.findOne({
-            where: {
-                shortCode
-            }
-        })
-
-        if (!shortLink) {
-            await sendErrorPage(res, 404, "404.html");
-            return;
-        }
-
-        if (!shortLink.isActive) {
-            await sendErrorPage(res, 423, "423.html");
-            return;
-        }
-
-        const redirectHtmlPath = path.join(__dirname, "../../../../public/redirect.html");
-        try {
-            let htmlContent = await fs.readFile(redirectHtmlPath, "utf-8");
-            
-            // Replace placeholders
-            const countdown = config.REDIRECT?.COUNTDOWN || 5;
-            htmlContent = htmlContent.replace(/{{SHORT_CODE}}/g, shortLink.shortCode);
-            htmlContent = htmlContent.replace(/{{COUNTDOWN}}/g, countdown.toString());
-            
-            res.setHeader("Content-Type", "text/html");
-            res.send(htmlContent);
-        } catch (readError) {
-            logger.error(`Error reading redirect.html: ${readError}`);
-            res.redirect(shortLink.longUrl);
-        }
-    } catch (error) {
-        logger.error(`[${req.method} ${req.originalUrl}] Error in getRedirectLink : ${error}`);
-        await sendErrorPage(res, 500, "500.html");
-        return;
-    }
-}
-
 const getOriginalUrl = async (req: Request, res: Response) => {
     const { shortCode } = req.params;
 
@@ -333,4 +284,4 @@ const getOriginalUrl = async (req: Request, res: Response) => {
     }
 }
 
-export { createShortLink, updateLinks, activateDeactivateLink, getShortLinks, getLinkDetails, getRedirectLink, getShortLinkCount, getOriginalUrl }
+export { createShortLink, updateLinks, activateDeactivateLink, getShortLinks, getLinkDetails, getShortLinkCount, getOriginalUrl }
