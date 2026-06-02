@@ -1,9 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Copy, ExternalLink, Link2, AlertCircle, Check, Edit2, X } from "lucide-react"
+import { Copy, ExternalLink, Link2, AlertCircle, Check, Edit2, X, QrCode, Download } from "lucide-react"
 import { fetchApi } from "@/lib/api"
 import { toast } from "sonner"
+import QRCode from "react-qr-code"
+import html2canvas from "html2canvas"
 
 interface ShortLink {
   urlId: string
@@ -26,6 +28,9 @@ export default function LinksPage() {
   const [editLinkId, setEditLinkId] = useState<string | null>(null)
   const [editUrl, setEditUrl] = useState("")
   const [isUpdating, setIsUpdating] = useState<string | null>(null)
+
+  // QR modal state
+  const [qrModalUrl, setQrModalUrl] = useState<string | null>(null)
 
   // Fetch all links on component mount
   useEffect(() => {
@@ -152,6 +157,22 @@ export default function LinksPage() {
       toast.error(err?.message || "Error updating link")
     } finally {
       setIsUpdating(null)
+    }
+  }
+
+  async function downloadQR(format: 'png' | 'jpeg') {
+    const qrElement = document.getElementById("qr-code-wrapper")
+    if (!qrElement) return
+    try {
+      const canvas = await html2canvas(qrElement, { backgroundColor: '#ffffff' })
+      const url = canvas.toDataURL(`image/${format}`, 1.0)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = `qrcode.${format}`
+      a.click()
+    } catch (err) {
+      console.error("Failed to download QR code", err)
+      toast.error("Failed to download QR code")
     }
   }
 
@@ -365,6 +386,13 @@ export default function LinksPage() {
                       >
                         <ExternalLink className="h-4 w-4" />
                       </button>
+                      <button
+                        onClick={() => setQrModalUrl(link.shortUrl)}
+                        title="View QR Code"
+                        className="flex h-9 w-9 items-center justify-center rounded-lg border border-beige-deep bg-cream text-charcoal hover:bg-cream-deeper hover:text-ink shadow-sm transition-all focus:outline-none"
+                      >
+                        <QrCode className="h-4 w-4" />
+                      </button>
                     </>
                   )}
                 </div>
@@ -373,6 +401,50 @@ export default function LinksPage() {
           </div>
         )}
       </div>
+
+      {/* QR Code Modal */}
+      {qrModalUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+          <div className="bg-card w-full max-w-sm rounded-xl border border-border shadow-lg overflow-hidden flex flex-col relative animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between p-4 border-b border-border">
+              <h3 className="font-display text-lg font-medium text-ink flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-primary" />
+                QR Code
+              </h3>
+              <button
+                onClick={() => setQrModalUrl(null)}
+                className="rounded-lg p-1.5 text-steel hover:bg-cream-soft hover:text-ink transition-colors focus:outline-none"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="p-8 flex flex-col items-center justify-center bg-cream-soft">
+              <div id="qr-code-wrapper" className="bg-white p-4 rounded-xl border border-beige-deep shadow-sm">
+                <QRCode value={qrModalUrl} size={200} level="H" />
+              </div>
+              <p className="mt-4 text-xs font-mono text-steel break-all text-center">
+                {qrModalUrl}
+              </p>
+            </div>
+            <div className="p-4 border-t border-border bg-card flex items-center justify-center gap-3">
+              <button
+                onClick={() => downloadQR('png')}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary hover:bg-primary/20 transition-colors focus:outline-none"
+              >
+                <Download className="h-4 w-4" />
+                PNG
+              </button>
+              <button
+                onClick={() => downloadQR('jpeg')}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-cream px-4 py-2.5 text-sm font-semibold text-charcoal border border-beige-deep hover:bg-cream-deeper transition-colors focus:outline-none"
+              >
+                <Download className="h-4 w-4" />
+                JPG
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
