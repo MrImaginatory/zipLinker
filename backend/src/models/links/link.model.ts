@@ -6,7 +6,6 @@ class ShortLinks extends Model {
     public userId!: string;
     public shortCode!: string;
     public longUrl!: string;
-    public clicks!: number;
     public isActive!: boolean;
     public createdAt!: Date;
     public updatedAt!: Date;
@@ -30,10 +29,6 @@ ShortLinks.init({
     longUrl: {
         type: DataTypes.STRING,
         allowNull: false
-    },
-    clicks: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0
     },
     isActive: {
         type: DataTypes.BOOLEAN,

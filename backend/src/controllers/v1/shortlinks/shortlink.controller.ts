@@ -1,6 +1,7 @@
 import ShortLinks from "../../../models/links/link.model.js";
 import ClickLog from "../../../models/links/clickLog.model.js";
 import { Request, Response } from "express";
+import { Op, fn, col } from "@sequelize/core";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
 import { generateNanoId } from "../../../utils/shortLink.util.js"
@@ -144,7 +145,7 @@ const getShortLinks = async (req: Request, res: Response) => {
             where: {
                 userId
             },
-            attributes: ["urlId", "longUrl", "isActive", "shortCode", "clicks"]
+            attributes: ["urlId", "longUrl", "isActive", "shortCode"]
         });
 
         if (!shortLinks) {
@@ -152,14 +153,27 @@ const getShortLinks = async (req: Request, res: Response) => {
             return
         }
 
+        const urlIds = shortLinks.map((link: any) => link.urlId);
+        let clickMap = new Map();
+        if (urlIds.length > 0) {
+            const clickCounts = await ClickLog.findAll({
+                where: { urlId: { [Op.in]: urlIds } },
+                attributes: ['urlId', [fn('COUNT', col('urlId')), 'count']],
+                group: ['urlId'],
+                raw: true
+            });
+            clickMap = new Map(clickCounts.map((c: any) => [c.urlId, parseInt(c.count, 10) || 0]));
+        }
+
         const respData = shortLinks.map((shortLink: ShortLinks) => {
             const shortUrl = config.WEBSITE_URL + "/" + shortLink.shortCode;
+            const noOfClicks = clickMap.get(shortLink.urlId) || 0;
 
             return {
                 urlId: shortLink.urlId,
                 longUrlLink: shortLink.longUrl,
                 shortUrl: shortUrl,
-                noOfClicks: shortLink.clicks,
+                noOfClicks,
                 isActive: shortLink.isActive
             }
         })
@@ -196,11 +210,12 @@ const getLinkDetails = async (req: Request, res: Response) => {
         }
 
         const shortUrl = config.WEBSITE_URL + "/" + shortLink.shortCode;
+        const noOfClicks = await ClickLog.count({ where: { urlId: shortLink.urlId } });
 
         const respData = {
             longUrlLink: shortLink.longUrl,
             shortUrl: shortUrl,
-            noOfClicks: shortLink.clicks,
+            noOfClicks,
             isActive: shortLink.isActive
         }
 
@@ -227,7 +242,7 @@ const getShortLinkCount = async (req: Request, res: Response) => {
             where: {
                 urlId
             },
-            attributes: ["clicks", "userId"]
+            attributes: ["urlId", "userId"]
         })
 
         if (!shortLink) {
@@ -240,7 +255,9 @@ const getShortLinkCount = async (req: Request, res: Response) => {
             return;
         }
 
-        sendResponse(res, 200, "Short Link Count Fetched Successfully", shortLink.clicks);
+        const noOfClicks = await ClickLog.count({ where: { urlId: shortLink.urlId } });
+
+        sendResponse(res, 200, "Short Link Count Fetched Successfully", noOfClicks);
         return;
     }
     catch (error) {
@@ -269,9 +286,6 @@ const getOriginalUrl = async (req: Request, res: Response) => {
             sendResponse(res, 423, "Short Link is deactivated");
             return;
         }
-
-        shortLink.clicks++;
-        await shortLink.save();
 
         // Log the click event for trend analysis
         await ClickLog.create({ urlId: shortLink.urlId });

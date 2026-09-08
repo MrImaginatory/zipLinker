@@ -1,7 +1,7 @@
 import ShortLinks from "../../../models/links/link.model.js";
 import ClickLog from "../../../models/links/clickLog.model.js";
 import { Request, Response } from "express";
-import { Op } from "@sequelize/core";
+import { Op, fn, col } from "@sequelize/core";
 import sendResponse from "../../../utils/responseHandler.util.js"
 import logger from "../../../utils/logger.util.js";
 
@@ -16,8 +16,20 @@ const dashboardAnalytics = async (req: Request, res: Response) => {
             return;
         }
 
+        const urlIds = shortLinks.map((link: any) => link.urlId);
+
+        let totalClicks = 0;
+        if (urlIds.length > 0) {
+            totalClicks = await ClickLog.count({
+                where: {
+                    urlId: {
+                        [Op.in]: urlIds
+                    }
+                }
+            });
+        }
+
         const totalLinks = shortLinks.length;
-        const totalClicks = shortLinks.reduce((acc: number, link: any) => acc + (link.clicks || 0), 0);
         const avgClickRate = totalLinks > 0 ? (totalClicks / totalLinks).toFixed(1) : "0.0";
 
         // Calculate dynamic trends for MoM (Month over Month)
@@ -55,7 +67,6 @@ const dashboardAnalytics = async (req: Request, res: Response) => {
         const linkTrend = linkChange >= 0 ? `+${linkChange.toFixed(1)}% this month` : `${linkChange.toFixed(1)}% this month`;
 
         // Fetch counts for click logs
-        const urlIds = shortLinks.map((link: any) => link.urlId);
 
         let currentMonthClicksCount = 0;
         let lastMonthClicksCount = 0;
@@ -131,11 +142,18 @@ const recentActivity = async (req: Request, res: Response) => {
         const urlIds = shortLinks.map((link: any) => link.urlId);
 
         // 1. Last Added Link
-        const lastAddedLink = await ShortLinks.findOne({
+        const lastAddedLinkData: any = await ShortLinks.findOne({
             where: { userId },
             order: [["createdAt", "DESC"]],
-            attributes: ["urlId", "shortCode", "longUrl", "clicks", "isActive", "createdAt"]
+            attributes: ["urlId", "shortCode", "longUrl", "isActive", "createdAt"],
+            raw: true
         });
+
+        let lastAddedLink = null;
+        if (lastAddedLinkData) {
+            const clicks = await ClickLog.count({ where: { urlId: lastAddedLinkData.urlId } });
+            lastAddedLink = { ...lastAddedLinkData, clicks };
+        }
 
         // 2. 1-Day Activities Timeline (Creations & Clicks within last 24 hours)
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -256,15 +274,28 @@ const recentActivity = async (req: Request, res: Response) => {
 
         // 5. Top Domains (Past Clicks Share)
         const domainClicksMap: { [key: string]: number } = {};
+        
+        let clickMap = new Map();
+        if (urlIds.length > 0) {
+            const clickCounts = await ClickLog.findAll({
+                where: { urlId: { [Op.in]: urlIds } },
+                attributes: ['urlId', [fn('COUNT', col('urlId')), 'count']],
+                group: ['urlId'],
+                raw: true
+            });
+            clickMap = new Map(clickCounts.map((c: any) => [c.urlId, parseInt(c.count, 10) || 0]));
+        }
+
         shortLinks.forEach((link: any) => {
+            const clicks = clickMap.get(link.urlId) || 0;
             try {
                 if (link.longUrl) {
                     const domain = new URL(link.longUrl).hostname.replace("www.", "");
-                    domainClicksMap[domain] = (domainClicksMap[domain] || 0) + (link.clicks || 0);
+                    domainClicksMap[domain] = (domainClicksMap[domain] || 0) + clicks;
                 }
             } catch (e) {
                 const domain = "Others";
-                domainClicksMap[domain] = (domainClicksMap[domain] || 0) + (link.clicks || 0);
+                domainClicksMap[domain] = (domainClicksMap[domain] || 0) + clicks;
             }
         });
 
